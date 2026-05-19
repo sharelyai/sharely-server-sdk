@@ -30,6 +30,7 @@
     "turbo": "^2.9.14"
   },
   "devDependencies": {
+    "@sharelyai/tsconfig": "^0.0.0",
     "dotenv-cli": "^11.0.0",
     "esbuild": "^0.28.0",
     "esbuild-register": "^3.6.0",

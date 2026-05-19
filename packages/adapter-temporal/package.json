@@ -1,0 +1,30 @@
+{
+  "name": "@sharely/adapter-temporal",
+  "version": "0.0.1",
+  "description": "Translates Temporal workflow signals into Sharely AgentEvents.",
+  "license": "MIT",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": ["dist", "src", "README.md"],
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "clean": "rm -rf dist .turbo"
+  },
+  "dependencies": {
+    "@sharely/protocol": "*"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.3"
+  }
+}

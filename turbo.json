@@ -1,18 +1,22 @@
 {
   "$schema": "https://turbo.build/schema.json",
   "globalDependencies": [".env"],
-  "globalEnv": [
-    "NODE_ENV",
-    "PORT"
-  ],
+  "globalEnv": ["NODE_ENV", "PORT"],
   "tasks": {
     "build": {
-      "outputs": ["dist/**", ".next/**", "!.next/cache/**", "public/dist/**"],
+      "outputs": ["dist/**"],
       "dependsOn": ["^build"]
+    },
+    "typecheck": {
+      "outputs": [],
+      "dependsOn": ["^build"]
+    },
+    "lint": {
+      "outputs": []
     },
     "test": {
       "outputs": ["coverage/**"],
-      "dependsOn": []
+      "dependsOn": ["^build"]
     },
     "dev": {
       "inputs": [".env"],
