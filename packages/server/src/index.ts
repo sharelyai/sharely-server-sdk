@@ -1,4 +1,14 @@
-// @sharely/server — Express runtime.
-// Phase 1 (TASK.md §9) lands here: HTTP + auth proxy + persistence + SSE encoder
-// extracted from sharelyai-be/src/controller/agent/sse.ts. Placeholder for now.
-export {};
+export { createSharelyServer } from "./createServer.js";
+export type { CreateSharelyServerOptions } from "./createServer.js";
+export type {
+  AgentContext, AgentEvent, AgentInput, AgentMessage, Handler,
+  Source, ThinkingStep, ToolCallRecord, TokenUsage
+} from "@sharely/protocol";
+export { extractAuthHeader, isInvalidBearer } from "./auth.js";
+export { buildAgentContext } from "./context.js";
+export { createFetcher } from "./fetcher.js";
+export type { Fetcher, FetcherError } from "./fetcher.js";
+export { createBackplaneClient } from "./persistence.js";
+export type { BackplaneClient, StoreMessageInput } from "./persistence.js";
+export { sendAgentEvent, sendSSEEvent, writeSSEHeaders } from "./sse.js";
+export { logger } from "./logger.js";
