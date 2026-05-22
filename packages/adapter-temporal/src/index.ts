@@ -1,4 +1,15 @@
-// @sharely/adapter-temporal — Temporal workflow ⇄ Sharely wire protocol translator.
-// Phase 2 (TASK.md §9) implements fromTemporal({ client, workflowType, taskQueue })
-// and emitAgentEvent.
-export {};
+export { fromTemporal } from "./temporal.js";
+export { pollingHandler } from "./poll.js";
+export {
+  createAgentEventSink,
+  emitAgentEvent,
+  AGENT_EVENTS_QUERY
+} from "./sink.js";
+export type { AgentEventSink } from "./sink.js";
+export type {
+  AgentEventPage,
+  AgentEventSource,
+  FromTemporalOptions,
+  TemporalClientLike,
+  TemporalWorkflowHandle
+} from "./types.js";

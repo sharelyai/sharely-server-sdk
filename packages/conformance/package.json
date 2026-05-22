@@ -1,8 +1,9 @@
 {
-  "name": "@sharely/adapter-temporal",
+  "name": "@sharely/conformance",
   "version": "0.0.1",
-  "description": "Translates Temporal workflow signals into Sharely AgentEvents.",
+  "description": "Shared conformance harness — validates AgentEvent streams against the wire-protocol contract.",
   "license": "MIT",
+  "private": true,
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -12,10 +13,7 @@
       "import": "./dist/index.js"
     }
   },
-  "files": ["dist", "src", "README.md"],
-  "publishConfig": {
-    "access": "public"
-  },
+  "files": ["dist", "src"],
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
@@ -25,7 +23,6 @@
     "@sharely/protocol": "*"
   },
   "devDependencies": {
-    "@sharely/conformance": "*",
     "typescript": "^5.6.3"
   }
 }

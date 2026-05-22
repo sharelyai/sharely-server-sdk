@@ -1,3 +1,10 @@
-// @sharely/adapter-vercel-ai — Vercel AI SDK ⇄ Sharely wire protocol translator.
-// Phase 2 (TASK.md §9) implements streamText event mapping + tool re-exports.
-export {};
+export { toSharelyHandler } from "./stream.js";
+export { toCoreMessages } from "./messages.js";
+export type { CoreMessage } from "./messages.js";
+export { sharelyVercelTools, sharelyToolDefinitions } from "./tools.js";
+export type { VercelToolShape } from "./tools.js";
+export type {
+  VercelAdapterOptions,
+  VercelStreamPart,
+  VercelStreamResult
+} from "./types.js";

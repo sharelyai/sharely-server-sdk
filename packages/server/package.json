@@ -22,6 +22,7 @@
     "clean": "rm -rf dist .turbo"
   },
   "dependencies": {
+    "@sharely/api": "*",
     "@sharely/protocol": "*",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",

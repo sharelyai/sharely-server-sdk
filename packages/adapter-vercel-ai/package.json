@@ -26,6 +26,7 @@
     "@sharely/tools": "*"
   },
   "devDependencies": {
+    "@sharely/conformance": "*",
     "typescript": "^5.6.3"
   }
 }

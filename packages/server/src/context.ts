@@ -1,9 +1,6 @@
-import type { AgentContext, SharelyAPIClient, TraceSpan } from "@sharely/protocol";
+import type { AgentContext, TraceSpan } from "@sharely/protocol";
+import { createSharelyAPIClient, type SharelyAPIClient } from "@sharely/api";
 import { logger } from "./logger.js";
-
-const apiClient = (baseUrl: string, workspaceId: string, roleId?: string | null): SharelyAPIClient => ({
-  baseUrl, workspaceId, ...(roleId != null && { roleId })
-});
 
 const traceSpan = (traceId: string, messageId: string, name: string): TraceSpan => {
   const tag = `${name}[${traceId}:${messageId}]`;
@@ -28,6 +25,7 @@ export interface BuildContextOptions {
   roleId?: string | null;
   languageId?: string;
   topK?: number;
+  apiClient?: SharelyAPIClient;
 }
 
 export const buildAgentContext = (o: BuildContextOptions): AgentContext => ({
@@ -40,6 +38,11 @@ export const buildAgentContext = (o: BuildContextOptions): AgentContext => ({
   ...(o.languageId && { languageId: o.languageId }),
   ...(o.topK !== undefined && { topK: o.topK }),
   authorization: o.authorization,
-  api: apiClient(o.apiBaseUrl, o.workspaceId, o.roleId),
+  api: o.apiClient ?? createSharelyAPIClient({
+    baseUrl: o.apiBaseUrl,
+    workspaceId: o.workspaceId,
+    authorization: o.authorization,
+    ...(o.roleId !== undefined && { roleId: o.roleId })
+  }),
   trace: traceSpan(o.traceId, o.messageId, "agent")
 });

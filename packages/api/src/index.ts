@@ -1,4 +1,9 @@
-// @sharely/api — typed client to sharelyai-be.
-// Targets the Backplane (TASK.md §5.5: /v1/workspaces/:workspaceId/agent/threads)
-// plus knowledge/RBAC/auth routes. Generated from OpenAPI once Spec 04 lands.
-export {};
+export { createSharelyAPIClient } from "./client.js";
+export type { SharelyAPIClient, SharelyAPIClientConfig } from "./client.js";
+export { defaultTransport, SharelyAPIError } from "./transport.js";
+export type { Transport, TransportRequest, TransportResponse } from "./transport.js";
+export type {
+  AgentThread, AgentThreadWithMessages, CreateThreadInput, RagInput, RagMatch,
+  StoreMessageInput, StoredAgentMessage, ThreadListInput, ThreadListResponse,
+  TokenValidationResult
+} from "./types.js";

@@ -12,11 +12,22 @@ import { createSharelyServer } from "../dist/index.js";
 const WS_ID = "ws-smoke";
 const THREAD_ID = "thread-smoke";
 const AUTH = "Bearer ak_test_token";
+const WORKSPACE_API_KEY = "wsk_test_key";
 
 // ---------- mock Backplane ----------
 const storedMessages = [];
+let validateCalls = 0;
 const mock = express();
 mock.use(express.json());
+mock.post(`/v1/workspaces/${WS_ID}/api-authenticated`, (req, res) => {
+  validateCalls++;
+  const { token } = req.body ?? {};
+  if (!token || token === "bad") return res.status(200).json({});
+  res.json({
+    id: "user-smoke",
+    user_metadata: { roleId: "role-smoke" }
+  });
+});
 mock.get(`/v1/workspaces/${WS_ID}/agent/threads/${THREAD_ID}`, (_req, res) => {
   res.json({ id: THREAD_ID, messages: storedMessages });
 });
@@ -47,7 +58,12 @@ const handler = async function* () {
 };
 
 // ---------- sharely server ----------
-const app = createSharelyServer({ apiUrl, workspaceId: WS_ID, handler });
+const app = createSharelyServer({
+  apiUrl,
+  workspaceId: WS_ID,
+  workspaceApiKey: WORKSPACE_API_KEY,
+  handler
+});
 const sharelyServer = await new Promise(r => {
   const s = app.listen(0, () => r(s));
 });
@@ -116,7 +132,17 @@ console.log("  expected:", expectedTypes.join(", "));
 console.log("  got:     ", got.join(", "));
 console.log("user message persisted via Backplane:", userPersisted ? "PASS" : "FAIL");
 console.log("assistant message persisted with thinkingSteps/toolCalls/sources/tokenUsage:", assistantPersisted ? "PASS" : "FAIL");
+console.log("token validated against /api-authenticated:", validateCalls === 1 ? "PASS" : `FAIL (called ${validateCalls} times)`);
+
+// ---------- bad-token check: server should 401 before invoking the handler ----------
+const badRes = await fetch(`http://127.0.0.1:${sharelyPort}/agent/threads/${THREAD_ID}/chat`, {
+  method: "POST",
+  headers: { "Content-Type": "application/json", Authorization: "Bearer bad" },
+  body: JSON.stringify({ message: "hi" })
+});
+const badOk = badRes.status === 401;
+console.log("bad token rejected with 401:", badOk ? "PASS" : `FAIL (got ${badRes.status})`);
 
 mockServer.close();
 sharelyServer.close();
-process.exit(ok && userPersisted && assistantPersisted ? 0 : 1);
+process.exit(ok && userPersisted && assistantPersisted && validateCalls >= 1 && badOk ? 0 : 1);

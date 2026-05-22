@@ -3,8 +3,8 @@ import type {
   AgentContext, AgentEvent, AgentInput, Handler,
   Source, ThinkingStep, TokenUsage, ToolCallRecord
 } from "@sharely/protocol";
+import type { SharelyAPIClient, StoreMessageInput } from "@sharely/api";
 import { endSSEStream, sendAgentEvent, sendDone, sendSSEEvent, writeSSEHeaders } from "./sse.js";
-import type { BackplaneClient, StoreMessageInput } from "./persistence.js";
 import { logger } from "./logger.js";
 
 export const newId = (): string =>
@@ -61,16 +61,19 @@ const assistant = (a: Accumulator): StoreMessageInput => ({
 
 export interface RunOptions {
   handler: Handler; context: AgentContext; message: string;
-  res: Response; backplane: BackplaneClient;
+  res: Response; api: SharelyAPIClient;
 }
 
-export const runHandler = async ({ handler, context, message, res, backplane }: RunOptions): Promise<void> => {
+const HISTORY_LIMIT = 50;
+
+export const runHandler = async ({ handler, context, message, res, api }: RunOptions): Promise<void> => {
   const abort = new AbortController();
   res.on("close", () => abort.abort());
   writeSSEHeaders(res);
 
-  await backplane.storeMessage(context.threadId, { role: "user", content: message });
-  const history = await backplane.loadHistory(context.threadId);
+  await api.threads.messages.create(context.threadId, { role: "user", content: message });
+  const thread = await api.threads.get(context.threadId);
+  const history = thread.messages.slice(-HISTORY_LIMIT).map(m => ({ role: m.role as "user" | "assistant", content: m.content }));
 
   const input: AgentInput = { message, history, context, signal: abort.signal };
   const envelope = { threadId: context.threadId, messageId: context.trace.messageId };
@@ -93,7 +96,7 @@ export const runHandler = async ({ handler, context, message, res, backplane }: 
 
   if (!errored && !abort.signal.aborted) {
     try {
-      const stored = await backplane.storeMessage(context.threadId, assistant(acc));
+      const stored = await api.threads.messages.create(context.threadId, assistant(acc));
       envelope.messageId = stored.id;
     } catch (err) {
       logger.error("Failed to persist assistant message", err instanceof Error ? err.message : err);
