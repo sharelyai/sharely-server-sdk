@@ -42,3 +42,5 @@ export const executeTool = async (
   if (!executor) return { error: `Unknown tool: ${name}` };
   return executor(input, context);
 };
+
+export { createPlatformExecutors } from "./platform.js";

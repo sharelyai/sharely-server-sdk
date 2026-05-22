@@ -34,7 +34,7 @@ const readUsage = (p: VercelStreamPart): TokenUsage => {
  * translator of the output stream into `AgentEvent`s. Pass `input.signal` to
  * `streamText`'s `abortSignal` to honor client disconnects.
  */
-export const toSharelyHandler = (
+export const fromVercelAI = (
   produce: (
     input: AgentInput
   ) => VercelStreamResult | Promise<VercelStreamResult>,

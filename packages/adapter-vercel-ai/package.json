@@ -10,6 +10,10 @@
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
+    },
+    "./tools": {
+      "types": "./dist/tools.d.ts",
+      "import": "./dist/tools.js"
     }
   },
   "files": ["dist", "src", "README.md"],
@@ -25,8 +29,12 @@
     "@sharely/protocol": "*",
     "@sharely/tools": "*"
   },
+  "peerDependencies": {
+    "ai": ">=4"
+  },
   "devDependencies": {
     "@sharely/conformance": "*",
+    "ai": "^5.0.0",
     "typescript": "^5.6.3"
   }
 }

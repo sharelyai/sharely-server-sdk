@@ -16,18 +16,22 @@ npm i @sharely/tools @sharely/protocol
 - Per-tool exports: `searchKnowledgeDefinition`, `semanticSearchDefinition`, `getKnowledgeItemDefinition`, `listTaxonomiesDefinition`, `getTaxonomyKnowledgeDefinition`, `getWorkspaceStatsDefinition`, `listRolesDefinition`.
 - **`getToolDefinitions()`** / **`getDefinitionByName(name)`** — lookup helpers.
 - **`createTools(executors)`** — produces a `Tool[]` for an executor registry you supply. Tools without a registered executor return `{ error: "Tool ... has no executor wired" }`.
+- **`createPlatformExecutors(api)`** — platform-backed executors for the tools that have a Backplane endpoint today. Currently `semantic_search`, backed by `@sharely/api`'s `rag()`.
 - **`executeTool(name, input, ctx, executors)`** — dispatches by name.
 
-## Why no execute layer?
+## The execute layer
 
-The upstream `sharelyai-be` `execute` functions hit Prisma / Pinecone / OpenAI embeddings directly. Those can't ship in a public SDK without leaking the backend schema. Once `@sharely/api` exposes the corresponding HTTP endpoints, a customer-side executor pack will plug into `createTools(...)`. Until then, plug your own executors:
+The upstream `sharelyai-be` `execute` functions hit Prisma / Pinecone / OpenAI embeddings directly — those can't ship in a public SDK. Instead:
+
+- **`semantic_search` works out of the box** — `createPlatformExecutors(api)` backs it with `@sharely/api`'s `rag()` (embedding + vector retrieval).
+- **The other 6 tools** (`search_knowledge`, `get_knowledge_item`, `list_taxonomies`, `get_taxonomy_knowledge`, `get_workspace_stats`, `list_roles`) have no Backplane endpoint yet — plug your own executor. `search_knowledge` in particular is keyword/ILIKE search and is *not* backed by `rag()` (that would silently turn a keyword tool into semantic search).
 
 ```ts
-import { createTools } from "@sharely/tools";
+import { createTools, createPlatformExecutors } from "@sharely/tools";
 
 const tools = createTools({
-  search_knowledge: async (input, ctx) => {
-    // your own retrieval, possibly via ctx.api (a SharelyAPIClient)
+  ...createPlatformExecutors(api),          // semantic_search, ready to use
+  search_knowledge: async (input, ctx) => { // bring your own
     return { output: { totalResults: 0, results: [] } };
   }
 });
