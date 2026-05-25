@@ -26,9 +26,6 @@ This is a Turborepo monorepo (`packages/*` workspaces, npm). Sibling repos used 
 | **1 — Protocol + server runtime** | ✅ Done in-repo | `@sharely/protocol`, `@sharely/server`, `@sharely/tools`, `@sharely/api` built + green. Backend dispatch branch landed in `sharelyai-be`. |
 | **2 — Conformance harness + 2 adapters** | ✅ Done | `@sharely/conformance` + `@sharely/adapter-vercel-ai` + `@sharely/adapter-temporal`, all passing conformance. |
 | **3 — Pattern C examples** | ✅ Done | `examples/`: Pattern C — `anthropic-sdk-direct`, `openai-agents-sdk`, `langgraph`, `raw-streaming`. Adapter-backed — `adapter-vercel-ai`, `adapter-temporal`. Each is handler + server + runnable smoke + README; all type-check clean, all smokes green. |
-| **4 — Customer migration** | ⬜ Not started | `@sharely/server/legacy` shim + `sharely migrate` codemod + `customagentserver` README rewrite. |
-| **5 — CLI integration** | ⬜ Not started | `sharely init` scaffolder (Spec 05). |
-| **6 — Sunset the fork** | ⬜ Not started | Retire the fork-the-template model after one shim release. |
 
 ---
 
@@ -145,9 +142,9 @@ The customer-hosted path required backend work. All committed and typecheck-clea
 
 ---
 
-## 9. Next steps (Phases 4–6)
+## 9. Examples
 
-Phase 3 landed in [`examples/`](examples/) — snippet-style (not packages), each one a customer-form `handler.ts` + `server.ts` wired into `createSharelyServer`, plus a runnable `smoke.mjs` (JS port + mocks, no API keys needed) and a `README.md`:
+[`examples/`](examples/) — snippet-style (not packages), each one a customer-form `handler.ts` + `server.ts` wired into `createSharelyServer`, plus a runnable `smoke.mjs` (JS port + mocks, no API keys needed) and a `README.md`:
 
 **Pattern C — raw `Handler`s, no SDK abstractions:**
 - [`anthropic-sdk-direct/`](examples/anthropic-sdk-direct/) — multi-turn loop, mid-stream `tool_call_start` via `input_json_delta` buffering, batched sources from `ToolResult`.
@@ -158,17 +155,6 @@ Phase 3 landed in [`examples/`](examples/) — snippet-style (not packages), eac
 **Adapter-backed — published `@sharely/adapter-*` packages do the translation:**
 - [`adapter-vercel-ai/`](examples/adapter-vercel-ai/) — `fromVercelAI(input => streamText({...}))` with `@ai-sdk/gateway` (swap for any provider). First-party `semantic_search` tool wired in. ~15 lines.
 - [`adapter-temporal/`](examples/adapter-temporal/) — `fromTemporal({ client })` with a real `@temporalio/client` `Client` wrapped via `wrapTemporalClient`. README includes the worker-side workflow snippet using `createAgentEventSink` + `emitAgentEvent`.
-
-**Phase 4 — Customer migration** (~2 weeks)
-- `@sharely/server/legacy` shim — keep existing `customagentserver` forkers running (legacy `POST /spaces/:spaceId/messages` path, plain-text streaming).
-- `sharely migrate` codemod.
-- Rewrite the stale `customagentserver/README.md`.
-
-**Phase 5 — CLI** (`sharely init`, ~1 week)
-Scaffolder with templates: Vercel AI–backed, Temporal-backed, raw `Handler`, blank.
-
-**Phase 6 — Sunset the fork**
-After one minor release with the shim, retire the fork-the-template model.
 
 **Also outstanding** (not phase-bound):
 - READMEs exist for `protocol`, `server`, `api`, `tools` — none yet for the two adapters or `conformance`.

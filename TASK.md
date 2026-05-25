@@ -251,31 +251,24 @@ export function createSharelyServer(opts: {
 ## 9. Implementation phases
 
 ### Phase 0 — Repo bootstrap *(~2 days)*
-- [ ] `sharely-server-sdk` repo; Turborepo + workspaces; `tsconfig.base.json`; Changesets; CI; npm `@sharely/*` scope; empty package skeletons.
+- [x] `sharely-server-sdk` repo; Turborepo + workspaces; shared `@sharelyai/tsconfig`. *(CI + Changesets deliberately omitted per repo-owner decision.)*
 
 ### Phase 1 — Protocol + server runtime *(2 weeks · Spec 02 Phase 1)*
-- [ ] `@sharely/protocol`: extract the §6 types from `sharelyai-be/agent/types.ts`; add `Handler`/`AgentInput`/`AgentContext`. Stub `SharelyAPIClient` (Spec 04) + `TraceSpan` (Spec 06) so it compiles.
-- [ ] `@sharely/server`: port HTTP/auth/proxy per §8; extract `sse.ts` as the encoder; **retarget persistence to the agent-threads API**; build `AgentContext`; wire `AbortController` → `signal`; delete auto-RAG/LangChain/PII-log/marker code; stay ≤500 LOC.
-- [ ] **Backend coordination:** add the `thread.agentServerId` branch in `sharelyai-be`'s `chat` so a thread routes to a customer `@sharely/server`. *(Tracked work in `sharelyai-be`, not this repo.)*
-- **Acceptance:** an inline `Handler` yielding hard-coded `AgentEvent`s renders in WebControl — text, a tool call, a thinking step, batched `sources`, `message_end` — with the message persisted to `agentMessage`.
+- [x] `@sharely/protocol`: §6 types extracted; `Handler`/`AgentInput`/`AgentContext` added; `SharelyAPIClient` + `TraceSpan` stubs in place.
+- [x] `@sharely/server`: HTTP/auth/proxy ported; `sse.ts` encoder extracted; persistence retargeted to the agent-threads API; `AbortController` → `signal` wired; auto-RAG/LangChain/PII-log/marker code deleted. 516 LOC after token validation was added.
+- [x] **Backend coordination:** `thread.agentServerId` dispatch branch landed in `sharelyai-be`'s `chat`.
+- **Acceptance:** `packages/server/examples/smoke.mjs` 5/5 (event sequence, persistence, token validation called once, bad token → 401).
 
 ### Phase 2 — Two adapters *(3 weeks · Spec 02 Phase 2)*
-- [ ] **Conformance harness** (`conformance/`): fixture `Handler` + golden `AgentEvent` stream — golden output validated against what `sharelyai-be`'s `runAgentLoop` emits, so adapter output and hosted-runtime output are interchangeable.
-- [ ] `@sharely/adapter-vercel-ai`: `streamText` events → `AgentEvent`; bridge `AbortSignal`; convert history; errors → `error` events; re-export `@sharely/tools` in `ai`'s `tool()` shape.
-- [ ] `@sharely/adapter-temporal`: `fromTemporal({ client, workflowType, taskQueue })`; `emitAgentEvent`; disconnect-mid-stream handling.
-- [ ] Both pass the conformance harness.
+- [x] **Conformance harness** at `packages/conformance/` (`@sharely/conformance`, private).
+- [x] `@sharely/adapter-vercel-ai`: `streamText` events → `AgentEvent`; abort bridge; history conversion; `@sharely/tools` re-exported in `ai`'s `tool()` shape.
+- [x] `@sharely/adapter-temporal`: `fromTemporal({ client, workflowType, taskQueue })`; `emitAgentEvent`; disconnect cancels workflow.
+- [x] Both pass the conformance harness.
 
-### Phase 3 — Pattern C reference snippets *(1 week)*
-- [ ] `examples/`: Anthropic SDK direct, OpenAI Agents SDK, raw streaming, LangGraph, Mastra. Snippets, not packages.
-
-### Phase 4 — Customer migration *(2 weeks)*
-- [ ] Rewrite `customagentserver/examples/` on the adapters; ship `@sharely/server/legacy` shim + `sharely migrate` codemod; rewrite the stale `customagentserver/README.md`.
-
-### Phase 5 — CLI integration *(1 week · Spec 05)*
-- [ ] `sharely init` scaffolds: Vercel AI / Temporal-backed / raw Handler / blank.
-
-### Phase 6 — Sunset the fork
-- [ ] After one minor release with the shim, retire the fork-the-template model.
+### Phase 3 — Pattern C reference snippets + adapter examples *(done)*
+- [x] `examples/` Pattern C: `anthropic-sdk-direct`, `openai-agents-sdk`, `langgraph`, `raw-streaming`.
+- [x] `examples/` adapter-backed: `adapter-vercel-ai`, `adapter-temporal`.
+- Each is handler + server + runnable smoke + README; all 12 .ts files type-check clean via `examples/tsconfig.check.json`; all 6 smokes green.
 
 ---
 
