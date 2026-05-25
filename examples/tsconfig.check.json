@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "compilerOptions": {
+    "composite": false,
+    "declaration": false,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "isolatedModules": true,
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "noEmit": true,
+    "skipLibCheck": true,
+    "strict": false,
+    "resolveJsonModule": true,
+    "target": "ES2022",
+    "lib": ["ES2022", "DOM"]
+  },
+  "include": [
+    "anthropic-sdk-direct/handler.ts",
+    "anthropic-sdk-direct/server.ts",
+    "openai-agents-sdk/handler.ts",
+    "openai-agents-sdk/server.ts",
+    "langgraph/handler.ts",
+    "langgraph/server.ts",
+    "raw-streaming/handler.ts",
+    "raw-streaming/server.ts",
+    "adapter-vercel-ai/handler.ts",
+    "adapter-vercel-ai/server.ts",
+    "adapter-temporal/handler.ts",
+    "adapter-temporal/server.ts"
+  ]
+}

@@ -25,7 +25,7 @@ This is a Turborepo monorepo (`packages/*` workspaces, npm). Sibling repos used 
 | **0 — Bootstrap** | ✅ Done | Turborepo + workspaces + shared tsconfig. **CI and Changesets deliberately omitted** per repo-owner decision. |
 | **1 — Protocol + server runtime** | ✅ Done in-repo | `@sharely/protocol`, `@sharely/server`, `@sharely/tools`, `@sharely/api` built + green. Backend dispatch branch landed in `sharelyai-be`. |
 | **2 — Conformance harness + 2 adapters** | ✅ Done | `@sharely/conformance` + `@sharely/adapter-vercel-ai` + `@sharely/adapter-temporal`, all passing conformance. |
-| **3 — Pattern C examples** | ⬜ Not started | `examples/`: anthropic-sdk-direct, openai-agents-sdk, langgraph, mastra, raw-streaming. |
+| **3 — Pattern C examples** | ✅ Done | `examples/`: Pattern C — `anthropic-sdk-direct`, `openai-agents-sdk`, `langgraph`, `raw-streaming`. Adapter-backed — `adapter-vercel-ai`, `adapter-temporal`. Each is handler + server + runnable smoke + README; all type-check clean, all smokes green. |
 | **4 — Customer migration** | ⬜ Not started | `@sharely/server/legacy` shim + `sharely migrate` codemod + `customagentserver` README rewrite. |
 | **5 — CLI integration** | ⬜ Not started | `sharely init` scaffolder (Spec 05). |
 | **6 — Sunset the fork** | ⬜ Not started | Retire the fork-the-template model after one shim release. |
@@ -121,6 +121,13 @@ The customer-hosted path required backend work. All committed and typecheck-clea
 - `node packages/server/examples/smoke.mjs` → 5/5 (event sequence, user+assistant persistence, token validation called once, bad token → 401).
 - `node packages/adapter-vercel-ai/examples/conformance.mjs` → 5/5 (4 scenarios + abort bridge).
 - `node packages/adapter-temporal/examples/conformance.mjs` → 6/6 (4 scenarios + sink round-trip + abort cancels workflow).
+- `node examples/anthropic-sdk-direct/smoke.mjs` → 6/6 (structural, event order, token aggregation, tool round-trip, sources batched, mid-stream tool_call_start).
+- `node examples/openai-agents-sdk/smoke.mjs` → 6/6 (structural, order, tokens, tool relay, sources, mid-run streaming).
+- `node examples/langgraph/smoke.mjs` → 6/6 (same shape as openai-agents-sdk).
+- `node examples/raw-streaming/smoke.mjs` → 10/10 (structural, header, thinking trio, tool position, tail order, reassembles 2 turns, sources, summed tokens, tool round-trip, abort halts).
+- `node examples/adapter-vercel-ai/smoke.mjs` → 6/6 (structural, order, tokens forwarded, tool round-trip, sources batched, streamed mid-run).
+- `node examples/adapter-temporal/smoke.mjs` → 6/6 (structural, order, tokens forwarded, tool round-trip, sources batched, abort cancels workflow handle).
+- `npx tsc -p examples/tsconfig.check.json` → all 12 example .ts files type-check clean.
 - `sharelyai-be` compiles (`etsc` + `tsc --noEmit`).
 
 **NOT verified:**
@@ -138,10 +145,19 @@ The customer-hosted path required backend work. All committed and typecheck-clea
 
 ---
 
-## 9. Next steps (Phases 3–6)
+## 9. Next steps (Phases 4–6)
 
-**Phase 3 — Pattern C reference examples** (`examples/`, ~1 week)
-Snippet-style (not packages) showing the raw `Handler` with: Anthropic SDK direct, OpenAI Agents SDK, LangGraph, Mastra, raw streaming. Each is a `Handler` wired into `createSharelyServer`.
+Phase 3 landed in [`examples/`](examples/) — snippet-style (not packages), each one a customer-form `handler.ts` + `server.ts` wired into `createSharelyServer`, plus a runnable `smoke.mjs` (JS port + mocks, no API keys needed) and a `README.md`:
+
+**Pattern C — raw `Handler`s, no SDK abstractions:**
+- [`anthropic-sdk-direct/`](examples/anthropic-sdk-direct/) — multi-turn loop, mid-stream `tool_call_start` via `input_json_delta` buffering, batched sources from `ToolResult`.
+- [`openai-agents-sdk/`](examples/openai-agents-sdk/) — observes `run(agent, …, { stream: true })`; defensive accessors throw on shape drift; sources by convention on tool outputs.
+- [`langgraph/`](examples/langgraph/) — observes `streamEvents(input, { version: 'v2' })` from a compiled graph; structural `StreamableGraph` typing to avoid pinning @langchain/langgraph versions.
+- [`raw-streaming/`](examples/raw-streaming/) — no framework; an async generator with a hand-rolled 2-turn loop, `runLLMTurn` / `runTool` stubs the customer replaces.
+
+**Adapter-backed — published `@sharely/adapter-*` packages do the translation:**
+- [`adapter-vercel-ai/`](examples/adapter-vercel-ai/) — `fromVercelAI(input => streamText({...}))` with `@ai-sdk/gateway` (swap for any provider). First-party `semantic_search` tool wired in. ~15 lines.
+- [`adapter-temporal/`](examples/adapter-temporal/) — `fromTemporal({ client })` with a real `@temporalio/client` `Client` wrapped via `wrapTemporalClient`. README includes the worker-side workflow snippet using `createAgentEventSink` + `emitAgentEvent`.
 
 **Phase 4 — Customer migration** (~2 weeks)
 - `@sharely/server/legacy` shim — keep existing `customagentserver` forkers running (legacy `POST /spaces/:spaceId/messages` path, plain-text streaming).
@@ -187,6 +203,14 @@ sharely-server-sdk/
 │   ├── adapter-vercel-ai/   @sharely/adapter-vercel-ai   — Vercel AI translator
 │   ├── adapter-temporal/    @sharely/adapter-temporal    — Temporal translator
 │   └── conformance/         @sharely/conformance         — test harness (private)
+├── examples/                Reference snippets (Phase 3)
+│   ├── anthropic-sdk-direct/    Pattern C — raw Anthropic SDK loop
+│   ├── openai-agents-sdk/       Pattern C — observes OpenAI Agents SDK runs
+│   ├── langgraph/               Pattern C — observes LangGraph streamEvents
+│   ├── raw-streaming/           Pattern C — no framework, hand-rolled
+│   ├── adapter-vercel-ai/       Adapter-backed — @sharely/adapter-vercel-ai
+│   ├── adapter-temporal/        Adapter-backed — @sharely/adapter-temporal
+│   └── tsconfig.check.json      shared type-check config for the examples
 ├── turbo.json
 ├── TASK.md                  the implementation plan (source of truth)
 └── README.md                this file
