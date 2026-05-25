@@ -1,7 +1,7 @@
 // Pattern C — raw Sharely `Handler` driving @anthropic-ai/sdk directly.
 //
 // Copy this into your project. You will need:
-//   npm i @anthropic-ai/sdk @sharely/protocol
+//   npm i @anthropic-ai/sdk @sharelyai/protocol
 //
 // The handler streams text + thinking deltas live, buffers tool blocks until
 // the assistant turn finishes, then replays them as `tool_call_start` /

@@ -1,7 +1,7 @@
 // Pattern C — raw Sharely `Handler` driving the OpenAI Agents SDK.
 //
 // Copy this into your project. You will need:
-//   npm i @openai/agents @sharely/protocol
+//   npm i @openai/agents @sharelyai/protocol
 //
 // Unlike the Anthropic example, the Agents SDK runs your tools itself — this
 // handler only observes the run and translates events. Text deltas come from

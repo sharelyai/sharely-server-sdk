@@ -1,11 +1,11 @@
-# @sharely/server
+# @sharelyai/server
 
 Express runtime for Sharely-compatible agent servers. **Drop in a `Handler`, get back a fully wired Express app** — HTTP, auth, persistence, SSE encoding, and the catch-all Sharely-platform proxy are all handled for you.
 
 ## Install
 
 ```bash
-npm i @sharely/server @sharely/protocol
+npm i @sharelyai/server @sharelyai/protocol
 ```
 
 ## Minimum viable server
@@ -52,9 +52,9 @@ Mint tokens, persist messages, define new event types, or invent cancellation pr
 
 ## See also
 
-- [`@sharelyai/protocol`](https://www.npmjs.com/package/@sharely/protocol) — wire types, `Handler` contract
-- [`@sharelyai/api`](https://www.npmjs.com/package/@sharely/api) — typed client to the Sharely platform Backplane
-- [`@sharelyai/tools`](https://www.npmjs.com/package/@sharely/tools) — first-party tool definitions
+- [`@sharelyai/protocol`](https://www.npmjs.com/package/@sharelyai/protocol) — wire types, `Handler` contract
+- [`@sharelyai/api`](https://www.npmjs.com/package/@sharelyai/api) — typed client to the Sharely platform Backplane
+- [`@sharelyai/tools`](https://www.npmjs.com/package/@sharelyai/tools) — first-party tool definitions
 
 ## Smoke
 

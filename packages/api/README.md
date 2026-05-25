@@ -1,11 +1,11 @@
-# @sharely/api
+# @sharelyai/api
 
 Typed client to the Sharely platform Backplane (`sharelyai-be`). Hand-written narrow client targeting the §5.5 agent-threads route subset — once the backend OpenAPI spec lands, this package will be regenerated against it.
 
 ## Install
 
 ```bash
-npm i @sharely/api @sharely/protocol
+npm i @sharelyai/api @sharelyai/protocol
 ```
 
 ## Usage

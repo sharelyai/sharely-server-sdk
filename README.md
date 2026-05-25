@@ -1,6 +1,6 @@
 # Sharely Server SDK
 
-> **Status / handoff document.** This README is the working-context summary of the SDK — what is built, what was decided, what is verified, and what comes next. It is written to be picked up by another engineer or model mid-build. The authoritative plan is [TASK.md](TASK.md); this file records reality against it.
+> **Status / handoff document.** This README is the working-context summary of the SDK — what is built, what was decided, what is verified, and what comes next. It is written to be picked up by another engineer or model mid-build.
 
 ---
 
@@ -18,7 +18,7 @@ This is a Turborepo monorepo (`packages/*` workspaces, npm). Sibling repos used 
 
 ---
 
-## 2. Phase status (vs TASK.md §9)
+## 2. Phase status
 
 | Phase                                    | State           | Notes                                                                                                                                                                                                                                                     |
 | ---------------------------------------- | --------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -41,9 +41,9 @@ All live under `packages/`, all build green via `npx turbo run build`.
 | `@sharelyai/tools`             | 169 | ✅ Ready | The 7 first-party Sharely tool **definitions** + pluggable executor registry.                                 |
 | `@sharelyai/adapter-vercel-ai` | 263 | ✅ Ready | Vercel AI SDK `streamText` ⇄ `AgentEvent` translator.                                                         |
 | `@sharelyai/adapter-temporal`  | 222 | ✅ Ready | Temporal workflow ⇄ `AgentEvent` translator (`fromTemporal` + `emitAgentEvent`).                              |
-| `@sharelyai/conformance`       | 322 | ✅ Ready | **Private.** Event-stream validator + golden scenarios + handler runner.                                      |
+| `@sharelyai/conformance`       | 322 | ✅ Ready | Event-stream validator + golden scenarios + handler runner.                                                   |
 
-> Note: `@sharelyai/server` is 516 LOC — slightly over TASK.md §3's ≤500 budget after token validation was added. The budget predates the token-validation requirement.
+> Note: `@sharelyai/server` is 516 LOC — slightly over the original ≤500 budget after token validation was added.
 
 ---
 
@@ -63,6 +63,20 @@ The `Handler` yields typed `AgentEvent`s; `@sharelyai/server` owns everything el
 
 `AgentEvent` is a discriminated union of 11 in-band events: `message_start`, `thinking_start`/`_delta`/`_end`, `tool_call_start`/`_end`, `content_delta`, `content_end`, `sources`, `message_end`, `error`. The server adds a 12th wire-only event, `done`, and wraps every event with a `{ threadId, messageId }` envelope. Extracted verbatim from `sharelyai-be/src/controller/agent/types.ts`.
 
+### Three execution models
+
+`sharelyai-be`'s chat endpoint dispatches one turn to one of three places — all speaking the same SSE event protocol, so an adapter-produced, raw-`Handler`, no-code-flow, or hosted-Anthropic-loop run are all interchangeable on the wire:
+
+```
+POST .../agent/threads/:threadId/chat
+        │
+        ├─ thread.agentServerId set?      → stream from customer's @sharelyai/server  (this SDK)
+        │
+        ├─ workspace.defaultAgentflowId?  → runAgentflowChat  (Sharely-hosted, no-code visual flows)
+        │
+        └─ else                           → runAgentLoop       (Sharely-hosted Anthropic loop)
+```
+
 ### Request flow
 
 ```
@@ -71,7 +85,7 @@ WebControl ──▶ sharelyai-be  POST /workspaces/:wsId/agent/threads/:threadI
                    └─ thread.agentServerId set?
                           │ yes → proxyToAgentServer (streams SSE straight through)
                           ▼
-              @sharely/server  POST /agent/threads/:threadId/chat
+              @sharelyai/server  POST /agent/threads/:threadId/chat
                    1. validate the user token → POST /v1/workspaces/:wsId/api-authenticated
                    2. persist user message    → Backplane
                    3. run the Handler, encode AgentEvents as SSE
@@ -79,12 +93,11 @@ WebControl ──▶ sharelyai-be  POST /workspaces/:wsId/agent/threads/:threadI
                    5. emit `done`
 ```
 
-### Auth model
+### Ownership boundaries
 
-- The customer's `@sharelyai/server` is configured with a **`workspaceApiKey`**.
-- Incoming requests carry a **user JWT** in `Authorization`. The server **validates** it via `POST /v1/workspaces/:wsId/api-authenticated` (caller-auth = `workspaceApiKey`, body = `{ token: <user JWT> }`), deriving `userId`/`temporalUserId`/`roleId`.
-- **Two-key split for platform calls:** `workspaceApiKey` is used **only** for that one validation call (`/api-authenticated` requires admin-class auth because it validates someone else's token). Every other Backplane call — persistence (`threads.get`, `threads.messages.create`), RAG, and the `AgentContext.api` exposed to the `Handler` — uses the **incoming user JWT** so the platform's RBAC checks (`getTokenRoleId` against `agentThread.roleId`) operate against the real user.
-- RBAC and token minting stay in `sharelyai-be`; the SDK never mints tokens.
+**`@sharelyai/server` owns** (customers never reimplement): HTTP + CORS + body limits + rate limit, the two-key auth split (validation via `workspaceApiKey`, persistence via incoming user JWT), SSE encoding + envelope, persistence to `agentThread`/`agentMessage`, retrying fetcher with header sanitization, request-scoped `AgentContext`, trace span lifecycle, client-disconnect → `AbortSignal`.
+
+**Adapters must NOT**: define new event types, implement tools, invent cancellation primitives, persist messages, retry/fallback, implement tracing, touch auth/RBAC/orchestration/model choice/prompts/tool composition. Adapters are **narrow translators**.
 
 ---
 
@@ -99,17 +112,15 @@ The customer-hosted path required backend work. All committed and typecheck-clea
 - **`src/utils/schemas.ts`** — `AGENT_BACKPLANE_AGENT_SERVER_CREATE` / `_UPDATE` yup schemas.
 - **`src/index.ts`** — 5 routes under `/v1/workspaces/:workspaceId/agent/servers`, guarded by `isApiKeyAuthenticated`.
 
-**Prisma migration applied** — the `AgentServer` table exists in the dev DB; the dispatch path can now run against real data.
-
 ---
 
-## 6. Key decisions & deviations from TASK.md
+## 6. Key decisions
 
-- **`conformance` is `packages/conformance`**, not the repo-root `conformance/` in TASK.md §2 — keeps workspace resolution clean (adapters depend on it as a devDependency). Private (`"private": true`), not published.
+- **`conformance` is `packages/conformance`** (a workspace package, not a repo-root directory) — keeps workspace resolution clean (adapters depend on it as a devDependency).
 - **`done` is wire-only.** The `Handler` emits `message_start … message_end`; the server appends `done`. `AgentEvent` does not include `done`.
-- **`@sharelyai/api` is hand-written**, covering the Backplane route subset (TASK.md §10 explicitly permits this until `sharelyai-be` ships an OpenAPI spec — §14 Q8).
+- **`@sharelyai/api` is hand-written**, covering the Backplane route subset. To be regenerated from an OpenAPI spec once `sharelyai-be` ships one.
 - **`@sharelyai/tools` ships definitions only.** The 7 tools have no default `execute` (the upstream ones hit Prisma/Pinecone directly and can't ship publicly). Executors plug in via `createTools({ ... })`.
-- **Token validation was added** — TASK.md §4/§11 said "never validates tokens", but the repo owner overrode this. On by default, disable with `validateIncomingToken: false`.
+- **Token validation is on by default** — the SDK calls `/v1/workspaces/:wsId/api-authenticated` to validate the incoming user JWT before invoking the Handler. Disable with `validateIncomingToken: false` (only safe for trusted test fixtures).
 - **Adapters are typed structurally** — they do not import `ai` or `@temporalio/*`, so they survive framework major-version churn.
 - **Inter-package deps use `"*"`** (repo-owner instruction) — not pinned semver ranges.
 - **No CI, no Changesets** — repo owner publishes manually with `npm publish`.
@@ -117,39 +128,7 @@ The customer-hosted path required backend work. All committed and typecheck-clea
 
 ---
 
-## 7. What is verified vs. unverified
-
-**Verified (automated):**
-
-- `npx turbo run build` → 7/7 packages compile.
-- `node packages/server/examples/smoke.mjs` → 5/5 (event sequence, user+assistant persistence, token validation called once, bad token → 401).
-- `node packages/adapter-vercel-ai/examples/conformance.mjs` → 5/5 (4 scenarios + abort bridge).
-- `node packages/adapter-temporal/examples/conformance.mjs` → 6/6 (4 scenarios + sink round-trip + abort cancels workflow).
-- `node examples/anthropic-sdk-direct/smoke.mjs` → 6/6 (structural, event order, token aggregation, tool round-trip, sources batched, mid-stream tool_call_start).
-- `node examples/openai-agents-sdk/smoke.mjs` → 6/6 (structural, order, tokens, tool relay, sources, mid-run streaming).
-- `node examples/langgraph/smoke.mjs` → 6/6 (same shape as openai-agents-sdk).
-- `node examples/raw-streaming/smoke.mjs` → 10/10 (structural, header, thinking trio, tool position, tail order, reassembles 2 turns, sources, summed tokens, tool round-trip, abort halts).
-- `node examples/adapter-vercel-ai/smoke.mjs` → 6/6 (structural, order, tokens forwarded, tool round-trip, sources batched, streamed mid-run).
-- `node examples/adapter-temporal/smoke.mjs` → 6/6 (structural, order, tokens forwarded, tool round-trip, sources batched, abort cancels workflow handle).
-- `npx tsc -p examples/tsconfig.check.json` → all 12 example .ts files type-check clean.
-- `sharelyai-be` compiles (`etsc` + `tsc --noEmit`).
-
-**NOT verified:**
-
-- Nothing has run against a **live `sharelyai-be`** or **WebControl**. All smokes use in-process mocks.
-- The Temporal adapter has **never run against a real Temporal cluster** — only a fake client. Polling/cursor/cancel logic is exercised; real `@temporalio/client` query semantics are not.
-- The `sharelyai-be` dispatch branch is **untested at runtime** — the `AgentServer` table doesn't exist until the migration is applied.
-
----
-
-## 8. Blockers / pending (need repo-owner action)
-
-1. **npm publish.** `@sharelyai/*` is an unclaimed scope. The owner is logged in (`andresmontoya`) but asked to publish manually. Publish order: `@sharelyai/protocol` first (others depend on it), then `tools`, `api`, `server`, adapters. `@sharelyai/conformance` is private — do not publish.
-2. **Drift prevention** (TASK.md §13 DoD) — once `@sharelyai/protocol` + `@sharelyai/tools` are published, rewrite `sharelyai-be/src/controller/agent/types.ts` and `tools/*` to re-export from the published packages instead of duplicating. ~10-line change; blocked on publish.
-
----
-
-## 9. Examples
+## 7. Examples
 
 [`examples/`](examples/) — snippet-style (not packages), each one a customer-form `handler.ts` + `server.ts` wired into `createSharelyServer`, plus a runnable `smoke.mjs` (JS port + mocks, no API keys needed) and a `README.md`:
 
@@ -173,7 +152,7 @@ The customer-hosted path required backend work. All committed and typecheck-clea
 
 ---
 
-## 10. Build & test
+## 8. Build & test
 
 ```bash
 npm install                                            # all workspaces
@@ -187,28 +166,27 @@ Each package: `build` (`tsc`), `typecheck` (`tsc --noEmit`), `clean`. TS config 
 
 ---
 
-## 11. Repo layout
+## 9. Repo layout
 
 ```
 sharely-server-sdk/
 ├── packages/
-│   ├── protocol/            @sharely/protocol            — wire types
-│   ├── server/              @sharely/server              — Express runtime
-│   ├── api/                 @sharely/api                 — Backplane client
-│   ├── tools/               @sharely/tools               — tool definitions
-│   ├── adapter-vercel-ai/   @sharely/adapter-vercel-ai   — Vercel AI translator
-│   ├── adapter-temporal/    @sharely/adapter-temporal    — Temporal translator
-│   └── conformance/         @sharely/conformance         — test harness (private)
+│   ├── protocol/            @sharelyai/protocol            — wire types
+│   ├── server/              @sharelyai/server              — Express runtime
+│   ├── api/                 @sharelyai/api                 — Backplane client
+│   ├── tools/               @sharelyai/tools               — tool definitions
+│   ├── adapter-vercel-ai/   @sharelyai/adapter-vercel-ai   — Vercel AI translator
+│   ├── adapter-temporal/    @sharelyai/adapter-temporal    — Temporal translator
+│   └── conformance/         @sharelyai/conformance         — test harness
 ├── examples/                Reference snippets (Phase 3)
 │   ├── anthropic-sdk-direct/    Pattern C — raw Anthropic SDK loop
 │   ├── openai-agents-sdk/       Pattern C — observes OpenAI Agents SDK runs
 │   ├── langgraph/               Pattern C — observes LangGraph streamEvents
 │   ├── raw-streaming/           Pattern C — no framework, hand-rolled
-│   ├── adapter-vercel-ai/       Adapter-backed — @sharely/adapter-vercel-ai
-│   ├── adapter-temporal/        Adapter-backed — @sharely/adapter-temporal
+│   ├── adapter-vercel-ai/       Adapter-backed — @sharelyai/adapter-vercel-ai
+│   ├── adapter-temporal/        Adapter-backed — @sharelyai/adapter-temporal
 │   └── tsconfig.check.json      shared type-check config for the examples
 ├── turbo.json
-├── TASK.md                  the implementation plan (source of truth)
 └── README.md                this file
 ```
 

@@ -5,7 +5,7 @@
 // logic in JS so the example runs without a TypeScript build or an Anthropic
 // API key. If you change handler.ts, mirror the change here.
 //
-//   npx turbo run build --filter=@sharely/conformance
+//   npx turbo run build --filter=@sharelyai/conformance
 //   node examples/anthropic-sdk-direct/smoke.mjs
 
 import { validateEventStream } from '@sharelyai/conformance';

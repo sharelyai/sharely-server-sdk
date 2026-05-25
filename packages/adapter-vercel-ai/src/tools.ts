@@ -43,8 +43,8 @@ const sharelyTool =
     const def = getDefinitionByName(name);
     if (!def) throw new Error(`Unknown Sharely tool: ${name}`);
 
-    // `context.api` is typed as the @sharely/protocol stub; at runtime
-    // @sharely/server populates it with a full @sharely/api client (rag(), …).
+    // `context.api` is typed as the @sharelyai/protocol stub; at runtime
+    // @sharelyai/server populates it with a full @sharelyai/api client (rag(), …).
     const platform = createPlatformExecutors(context.api as SharelyAPIClient);
     const run = executor ?? platform[name];
     const toolContext = toToolContext(context);

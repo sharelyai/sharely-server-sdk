@@ -1,9 +1,8 @@
 {
   "name": "@sharelyai/conformance",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Shared conformance harness — validates AgentEvent streams against the wire-protocol contract.",
   "license": "MIT",
-  "private": true,
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",

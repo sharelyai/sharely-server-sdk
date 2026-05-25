@@ -1,4 +1,4 @@
-// Conformance smoke for @sharely/adapter-vercel-ai.
+// Conformance smoke for @sharelyai/adapter-vercel-ai.
 // Feeds the adapter a fake `streamText` fullStream per conformance scenario and
 // asserts the translated AgentEvent stream is structurally valid and matches
 // the golden sequence.
@@ -97,7 +97,7 @@ console.log(
 );
 if (!abortOk) allOk = false;
 
-// `./tools` subpath: semanticSearch is a Vercel tool backed by @sharely/api.rag().
+// `./tools` subpath: semanticSearch is a Vercel tool backed by @sharelyai/api.rag().
 let ragCalls = 0;
 const toolContext = {
   workspaceId: 'ws',

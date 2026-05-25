@@ -2,7 +2,7 @@
 // wrapper. Just an async generator that yields AgentEvents.
 //
 // Copy this into your project. You will need:
-//   npm i @sharely/protocol
+//   npm i @sharelyai/protocol
 //
 // Use this shape when you have a non-streaming LLM (chunk the final string),
 // a custom upstream protocol (bridge it to AgentEvents), or you want zero

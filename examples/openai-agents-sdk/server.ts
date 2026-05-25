@@ -1,6 +1,6 @@
 // Wire the Pattern C OpenAI Agents handler into createSharelyServer.
 //
-//   npm i @openai/agents zod @sharely/server @sharely/protocol
+//   npm i @openai/agents zod @sharelyai/server @sharelyai/protocol
 //
 // Env vars:
 //   OPENAI_API_KEY            — OpenAI key (read by @openai/agents)

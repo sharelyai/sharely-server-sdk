@@ -1,10 +1,10 @@
-// Phase 1 acceptance smoke (TASK.md §9):
-// boots a mock Backplane + an inline-Handler @sharely/server, sends one chat,
-// prints each SSE event and asserts the full sequence required by §9.
+// Server acceptance smoke: boots a mock Backplane + an inline-Handler
+// @sharelyai/server, sends one chat, prints each SSE event and asserts the
+// full event sequence + persistence + auth split.
 //
 //   node packages/server/examples/smoke.mjs
 //
-// Requires the package to be built first (`npx turbo run build --filter=@sharely/server`).
+// Requires the package to be built first (`npx turbo run build --filter=@sharelyai/server`).
 
 import express from "express";
 import { createSharelyServer } from "../dist/index.js";

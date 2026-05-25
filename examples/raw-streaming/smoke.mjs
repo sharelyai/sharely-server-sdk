@@ -4,7 +4,7 @@
 // same logic in JS so the example runs without a TS build. If you change
 // handler.ts, mirror the change here.
 //
-//   npx turbo run build --filter=@sharely/conformance
+//   npx turbo run build --filter=@sharelyai/conformance
 //   node examples/raw-streaming/smoke.mjs
 
 import { validateEventStream } from '@sharelyai/conformance';

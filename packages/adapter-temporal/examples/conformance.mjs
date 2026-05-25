@@ -1,4 +1,4 @@
-// Conformance smoke for @sharely/adapter-temporal.
+// Conformance smoke for @sharelyai/adapter-temporal.
 // Drives the adapter against a fake Temporal client whose workflow handle is
 // backed by a `createAgentEventSink()` buffer, then asserts the streamed
 // AgentEvents are structurally valid and match each golden scenario.

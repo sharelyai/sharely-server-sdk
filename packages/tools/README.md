@@ -1,4 +1,4 @@
-# @sharely/tools
+# @sharelyai/tools
 
 First-party Sharely tool **definitions** — the LLM-facing contracts for the 7 platform tools (`search_knowledge`, `semantic_search`, `get_knowledge_item`, `list_taxonomies`, `get_taxonomy_knowledge`, `get_workspace_stats`, `list_roles`).
 
@@ -7,7 +7,7 @@ The same definition objects are consumed by `sharelyai-be`'s hosted agent runtim
 ## Install
 
 ```bash
-npm i @sharely/tools @sharely/protocol
+npm i @sharelyai/tools @sharelyai/protocol
 ```
 
 ## What's shipped

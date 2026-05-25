@@ -1,6 +1,6 @@
 {
   "name": "@sharelyai/adapter-vercel-ai",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Translates Vercel AI SDK streams into Sharely AgentEvents.",
   "license": "MIT",
   "type": "module",

@@ -1,7 +1,7 @@
 // Pattern C — raw Sharely `Handler` driving a LangGraph graph via streamEvents.
 //
 // Copy this into your project. You will need:
-//   npm i @langchain/langgraph @langchain/core @sharely/protocol
+//   npm i @langchain/langgraph @langchain/core @sharelyai/protocol
 //
 // LangGraph owns the agent loop and tool execution; this handler observes
 // `streamEvents(input, { version: 'v2' })` and translates the relevant events

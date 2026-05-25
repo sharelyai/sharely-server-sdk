@@ -18,7 +18,7 @@ export type ExecutorRegistry = Partial<Record<string, ToolExecutor>>;
 const notImplemented =
   (name: string): ToolExecutor =>
   async () => ({
-    error: `Tool ${name} has no executor wired. Provide one via createTools({ [${JSON.stringify(name)}]: yourExecutor }) or attach @sharely/api once it ships.`,
+    error: `Tool ${name} has no executor wired. Provide one via createTools({ [${JSON.stringify(name)}]: yourExecutor }) or attach @sharelyai/api once it ships.`,
   });
 
 export const getToolDefinitions = (): ToolDefinition[] => definitions;

@@ -1,6 +1,6 @@
 // Wire the raw Pattern C handler into createSharelyServer.
 //
-//   npm i @sharely/server @sharely/protocol
+//   npm i @sharelyai/server @sharelyai/protocol
 //
 // Env vars:
 //   SHARELY_API_URL           — sharelyai-be base URL

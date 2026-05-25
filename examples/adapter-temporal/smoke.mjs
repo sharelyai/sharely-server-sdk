@@ -1,6 +1,6 @@
 // Runnable proof for the Temporal-backed handler.
 //
-// Drives @sharely/adapter-temporal end-to-end with a fake Temporal client
+// Drives @sharelyai/adapter-temporal end-to-end with a fake Temporal client
 // whose "workflow" is in-process: scripted AgentEvents pushed into a
 // createAgentEventSink() buffer that the polling handler queries. No
 // Temporal server or worker needed.

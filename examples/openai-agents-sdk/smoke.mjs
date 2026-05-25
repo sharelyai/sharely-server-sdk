@@ -4,7 +4,7 @@
 // inlines the same logic in JS so the example runs without a TS build or an
 // OpenAI key. If you change handler.ts, mirror the change here.
 //
-//   npx turbo run build --filter=@sharely/conformance
+//   npx turbo run build --filter=@sharelyai/conformance
 //   node examples/openai-agents-sdk/smoke.mjs
 
 import { validateEventStream } from '@sharelyai/conformance';

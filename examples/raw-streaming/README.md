@@ -16,7 +16,7 @@ The most minimal Pattern C: no framework, no factory, no wrapper. **A `Handler` 
 
 ```bash
 npm install
-npx turbo run build --filter=@sharely/conformance
+npx turbo run build --filter=@sharelyai/conformance
 node examples/raw-streaming/smoke.mjs
 ```
 

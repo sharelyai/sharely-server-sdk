@@ -1,6 +1,6 @@
 // Wire the Pattern C Anthropic handler into createSharelyServer.
 //
-//   npm i @anthropic-ai/sdk @sharely/server @sharely/protocol
+//   npm i @anthropic-ai/sdk @sharelyai/server @sharelyai/protocol
 //
 // Then `tsx server.ts` (or compile first) with these env vars set:
 //   ANTHROPIC_API_KEY        — Anthropic API key

@@ -16,7 +16,7 @@ A raw Sharely `Handler` driving [`@openai/agents`](https://openai.github.io/open
 
 ```bash
 npm install
-npx turbo run build --filter=@sharely/conformance
+npx turbo run build --filter=@sharelyai/conformance
 node examples/openai-agents-sdk/smoke.mjs
 ```
 

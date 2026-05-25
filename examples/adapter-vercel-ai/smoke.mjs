@@ -1,6 +1,6 @@
 // Runnable proof for the Vercel AI–backed handler.
 //
-// Drives @sharely/adapter-vercel-ai's fromVercelAI() with a hand-built fake
+// Drives @sharelyai/adapter-vercel-ai's fromVercelAI() with a hand-built fake
 // `streamText` result that emits the Vercel `fullStream` part types — no
 // model API key needed. Mirrors what packages/adapter-vercel-ai/examples/
 // conformance.mjs does, but framed as a customer-usage demo.

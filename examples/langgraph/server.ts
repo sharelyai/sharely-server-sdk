@@ -1,7 +1,7 @@
 // Wire the Pattern C LangGraph handler into createSharelyServer.
 //
 //   npm i @langchain/langgraph @langchain/anthropic @langchain/core zod \
-//         @sharely/server @sharely/protocol
+//         @sharelyai/server @sharelyai/protocol
 //
 // Env vars:
 //   ANTHROPIC_API_KEY         — Anthropic key (read by @langchain/anthropic)

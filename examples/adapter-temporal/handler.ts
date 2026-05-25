@@ -5,8 +5,8 @@
 // README for the workflow + worker snippets).
 //
 // Copy into your project. You will need:
-//   npm i @temporalio/client @sharely/adapter-temporal \
-//         @sharely/server @sharely/protocol
+//   npm i @temporalio/client @sharelyai/adapter-temporal \
+//         @sharelyai/server @sharelyai/protocol
 //
 // The handler itself doesn't import @temporalio/client — it accepts any
 // `TemporalClientLike` (start + cancel + query). server.ts wires a real

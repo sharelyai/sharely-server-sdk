@@ -3,8 +3,8 @@
 // model + prompt + tools; the adapter handles the AgentEvent translation.
 //
 // Copy into your project. You will need:
-//   npm i ai @ai-sdk/gateway @sharely/adapter-vercel-ai \
-//         @sharely/server @sharely/protocol
+//   npm i ai @ai-sdk/gateway @sharelyai/adapter-vercel-ai \
+//         @sharelyai/server @sharelyai/protocol
 //
 // (Swap @ai-sdk/gateway for any other provider — @ai-sdk/anthropic,
 // @ai-sdk/openai, etc. The shape of streamText is identical.)
@@ -24,7 +24,7 @@ export const handler: Handler = fromVercelAI(
       system: 'You are a helpful assistant.',
       messages: toCoreMessages(input),
       // First-party Sharely tools, ready-wired in Vercel AI's tool() shape.
-      // semanticSearch is backed by @sharely/api's rag() out of the box.
+      // semanticSearch is backed by @sharelyai/api's rag() out of the box.
       tools: {
         semantic_search: semanticSearch(input.context),
       },

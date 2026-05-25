@@ -1,4 +1,4 @@
-# @sharely/protocol
+# @sharelyai/protocol
 
 Wire-protocol types for Sharely-compatible agent servers. **Types only — no runtime code.**
 
@@ -16,7 +16,7 @@ Extracted from `sharelyai-be/src/controller/agent/types.ts` and ratified as the 
 ## Install
 
 ```bash
-npm i @sharely/protocol
+npm i @sharelyai/protocol
 ```
 
 ## Minimal handler
