@@ -1,5 +1,5 @@
 {
-  "name": "@sharely/adapter-temporal",
+  "name": "@sharelyai/adapter-temporal",
   "version": "0.0.1",
   "description": "Translates Temporal workflow signals into Sharely AgentEvents.",
   "license": "MIT",
@@ -22,10 +22,10 @@
     "clean": "rm -rf dist .turbo"
   },
   "dependencies": {
-    "@sharely/protocol": "*"
+    "@sharelyai/protocol": "*"
   },
   "devDependencies": {
-    "@sharely/conformance": "*",
+    "@sharelyai/conformance": "*",
     "typescript": "^5.6.3"
   }
 }

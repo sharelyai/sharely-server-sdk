@@ -1,17 +1,17 @@
-import type { AgentEvent, AgentInput, Handler } from "@sharely/protocol";
-import type { AgentEventSource } from "./types.js";
+import type { AgentEvent, AgentInput, Handler } from '@sharelyai/protocol';
+import type { AgentEventSource } from './types.js';
 
 const delay = (ms: number, signal: AbortSignal): Promise<void> =>
   new Promise(resolve => {
     if (signal.aborted) return resolve();
     const timer = setTimeout(resolve, ms);
     signal.addEventListener(
-      "abort",
+      'abort',
       () => {
         clearTimeout(timer);
         resolve();
       },
-      { once: true }
+      { once: true },
     );
   });
 
@@ -22,8 +22,10 @@ const delay = (ms: number, signal: AbortSignal): Promise<void> =>
  * source — `fromTemporal` is a thin binding over this.
  */
 export const pollingHandler = (
-  createSource: (input: AgentInput) => AgentEventSource | Promise<AgentEventSource>,
-  pollIntervalMs = 250
+  createSource: (
+    input: AgentInput,
+  ) => AgentEventSource | Promise<AgentEventSource>,
+  pollIntervalMs = 250,
 ): Handler =>
   async function* (input): AsyncIterable<AgentEvent> {
     let source: AgentEventSource;
@@ -31,8 +33,8 @@ export const pollingHandler = (
       source = await createSource(input);
     } catch (err) {
       yield {
-        type: "error",
-        error: err instanceof Error ? err.message : "failed to start workflow"
+        type: 'error',
+        error: err instanceof Error ? err.message : 'failed to start workflow',
       };
       return;
     }
@@ -58,8 +60,8 @@ export const pollingHandler = (
       }
     } catch (err) {
       yield {
-        type: "error",
-        error: err instanceof Error ? err.message : "workflow poll failed"
+        type: 'error',
+        error: err instanceof Error ? err.message : 'workflow poll failed',
       };
     }
   };

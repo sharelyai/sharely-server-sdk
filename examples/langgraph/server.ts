@@ -13,7 +13,7 @@ import { ChatAnthropic } from '@langchain/anthropic';
 import { tool } from '@langchain/core/tools';
 import { createReactAgent } from '@langchain/langgraph/prebuilt';
 import { z } from 'zod';
-import { createSharelyServer } from '@sharely/server';
+import { createSharelyServer } from '@sharelyai/server';
 import { createLangGraphHandler } from './handler.js';
 
 const lookup = tool(

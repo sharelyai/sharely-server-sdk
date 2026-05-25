@@ -7,7 +7,7 @@
 //   npx turbo run build --filter=@sharely/conformance
 //   node examples/langgraph/smoke.mjs
 
-import { validateEventStream } from '@sharely/conformance';
+import { validateEventStream } from '@sharelyai/conformance';
 
 // ---------- JS port of createLangGraphHandler (handler.ts) ----------
 
@@ -36,7 +36,11 @@ const extractUsage = output => {
 const extractToolInput = raw => {
   if (raw == null) return {};
   if (typeof raw === 'string') {
-    try { return JSON.parse(raw); } catch { return {}; }
+    try {
+      return JSON.parse(raw);
+    } catch {
+      return {};
+    }
   }
   if (typeof raw === 'object') {
     if (raw.input && typeof raw.input === 'object') return raw.input;
@@ -67,7 +71,9 @@ const defaultBuildInput = input => ({
 });
 
 const createLangGraphHandler = ({
-  graph, model, buildInput = defaultBuildInput,
+  graph,
+  model,
+  buildInput = defaultBuildInput,
 }) => {
   return async function* (input) {
     yield {
@@ -179,8 +185,10 @@ const events = [
         answer: 42,
         sources: [
           {
-            id: 'src-1', type: 'knowledge',
-            title: 'Reference doc', url: 'https://example.com/doc',
+            id: 'src-1',
+            type: 'knowledge',
+            title: 'Reference doc',
+            url: 'https://example.com/doc',
           },
         ],
       },
@@ -192,7 +200,9 @@ const events = [
   },
   {
     event: 'on_chat_model_end',
-    data: { output: { usage_metadata: { input_tokens: 30, output_tokens: 12 } } },
+    data: {
+      output: { usage_metadata: { input_tokens: 30, output_tokens: 12 } },
+    },
   },
 ];
 
@@ -208,9 +218,19 @@ const input = {
   message: "what's the answer?",
   history: [],
   context: {
-    workspaceId: 'ws', threadId: 't', authorization: 'Bearer x',
+    workspaceId: 'ws',
+    threadId: 't',
+    authorization: 'Bearer x',
     api: { baseUrl: 'x', workspaceId: 'ws' },
-    trace: { traceId: 'tr', messageId: 'm', event() {}, child() { return this; }, end() {} },
+    trace: {
+      traceId: 'tr',
+      messageId: 'm',
+      event() {},
+      child() {
+        return this;
+      },
+      end() {},
+    },
   },
   signal: new AbortController().signal,
 };
@@ -218,7 +238,8 @@ const input = {
 for await (const e of handler(input)) collected.push(e);
 
 console.log('Stream:');
-for (const e of collected) console.log(' ', e.type, JSON.stringify(e).slice(0, 100));
+for (const e of collected)
+  console.log(' ', e.type, JSON.stringify(e).slice(0, 100));
 
 // ---------- Assertions ----------
 
@@ -226,25 +247,23 @@ const structural = validateEventStream(collected);
 const types = collected.map(e => e.type);
 const expected = [
   'message_start',
-  'content_delta',   // "Let me check. "
+  'content_delta', // "Let me check. "
   'tool_call_start', // lookup(q=x) — observed from on_tool_start
-  'content_delta',   // "Looking now..."
-  'tool_call_end',   // on_tool_end; output includes sources
-  'content_delta',   // "Result: 42."
-  'sources',         // accumulated from tool output.sources
+  'content_delta', // "Looking now..."
+  'tool_call_end', // on_tool_end; output includes sources
+  'content_delta', // "Result: 42."
+  'sources', // accumulated from tool output.sources
   'content_end',
   'message_end',
 ];
 
 const orderOk =
-  expected.length === types.length &&
-  expected.every((t, i) => types[i] === t);
+  expected.length === types.length && expected.every((t, i) => types[i] === t);
 
 const me = collected[collected.length - 1];
 const expectedTotal = 30 + 12;
 const tokensOk =
-  me?.type === 'message_end' &&
-  me.tokenUsage?.totalTokens === expectedTotal;
+  me?.type === 'message_end' && me.tokenUsage?.totalTokens === expectedTotal;
 
 const tcStart = collected.find(e => e.type === 'tool_call_start');
 const tcEnd = collected.find(e => e.type === 'tool_call_end');
@@ -265,17 +284,46 @@ const startIdx = collected.findIndex(e => e.type === 'tool_call_start');
 const before = collected[startIdx - 1];
 const after = collected[startIdx + 1];
 const streamingOk =
-  before?.type === 'content_delta' && before.delta === 'Let me check. ' &&
-  after?.type === 'content_delta' && after.delta === 'Looking now...';
+  before?.type === 'content_delta' &&
+  before.delta === 'Let me check. ' &&
+  after?.type === 'content_delta' &&
+  after.delta === 'Looking now...';
 
 console.log('\n--- assertions ---');
-console.log('structural:        ', structural.ok ? 'PASS' : `FAIL: ${structural.errors.join('; ')}`);
-console.log('event order:       ', orderOk ? 'PASS' : `FAIL\n   expected: ${expected.join(', ')}\n   got:      ${types.join(', ')}`);
-console.log('token aggregation: ', tokensOk ? 'PASS' : `FAIL (got ${me?.tokenUsage?.totalTokens}, expected ${expectedTotal})`);
-console.log('tool relay:        ', toolOk ? 'PASS' : `FAIL (start=${JSON.stringify(tcStart)}, end=${JSON.stringify(tcEnd)})`);
-console.log('sources batched:   ', sourcesOk ? 'PASS' : `FAIL (${JSON.stringify(sourcesEvent)})`);
-console.log('streamed mid-run:  ', streamingOk ? 'PASS' : `FAIL (before=${JSON.stringify(before)}, after=${JSON.stringify(after)})`);
+console.log(
+  'structural:        ',
+  structural.ok ? 'PASS' : `FAIL: ${structural.errors.join('; ')}`,
+);
+console.log(
+  'event order:       ',
+  orderOk
+    ? 'PASS'
+    : `FAIL\n   expected: ${expected.join(', ')}\n   got:      ${types.join(', ')}`,
+);
+console.log(
+  'token aggregation: ',
+  tokensOk
+    ? 'PASS'
+    : `FAIL (got ${me?.tokenUsage?.totalTokens}, expected ${expectedTotal})`,
+);
+console.log(
+  'tool relay:        ',
+  toolOk
+    ? 'PASS'
+    : `FAIL (start=${JSON.stringify(tcStart)}, end=${JSON.stringify(tcEnd)})`,
+);
+console.log(
+  'sources batched:   ',
+  sourcesOk ? 'PASS' : `FAIL (${JSON.stringify(sourcesEvent)})`,
+);
+console.log(
+  'streamed mid-run:  ',
+  streamingOk
+    ? 'PASS'
+    : `FAIL (before=${JSON.stringify(before)}, after=${JSON.stringify(after)})`,
+);
 
-const allOk = structural.ok && orderOk && tokensOk && toolOk && sourcesOk && streamingOk;
+const allOk =
+  structural.ok && orderOk && tokensOk && toolOk && sourcesOk && streamingOk;
 console.log(allOk ? '\nall checks passed' : '\nSMOKE FAILED');
 process.exit(allOk ? 0 : 1);

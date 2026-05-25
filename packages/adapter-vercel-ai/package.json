@@ -1,5 +1,5 @@
 {
-  "name": "@sharely/adapter-vercel-ai",
+  "name": "@sharelyai/adapter-vercel-ai",
   "version": "0.0.1",
   "description": "Translates Vercel AI SDK streams into Sharely AgentEvents.",
   "license": "MIT",
@@ -26,15 +26,15 @@
     "clean": "rm -rf dist .turbo"
   },
   "dependencies": {
-    "@sharely/protocol": "*",
-    "@sharely/tools": "*"
+    "@sharelyai/protocol": "*",
+    "@sharelyai/tools": "*"
   },
   "peerDependencies": {
-    "ai": ">=4"
+    "ai": ">=6"
   },
   "devDependencies": {
-    "@sharely/conformance": "*",
-    "ai": "^5.0.0",
+    "@sharelyai/conformance": "*",
+    "ai": "6.0.191",
     "typescript": "^5.6.3"
   }
 }

@@ -1,7 +1,7 @@
 {
-  "name": "@sharely/tools",
+  "name": "@sharelyai/tools",
   "version": "0.0.1",
-  "description": "Sharely tool definitions extracted from sharelyai-be/src/controller/agent/tools/.",
+  "description": "Sharely tool definitions.",
   "license": "MIT",
   "type": "module",
   "main": "./dist/index.js",
@@ -22,8 +22,8 @@
     "clean": "rm -rf dist .turbo"
   },
   "dependencies": {
-    "@sharely/api": "*",
-    "@sharely/protocol": "*"
+    "@sharelyai/api": "*",
+    "@sharelyai/protocol": "*"
   },
   "devDependencies": {
     "typescript": "^5.6.3"

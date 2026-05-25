@@ -1,4 +1,4 @@
-// Adapter-backed Pattern A — `@sharely/adapter-vercel-ai` turns a Vercel AI
+// Adapter-backed Pattern A — `@sharelyai/adapter-vercel-ai` turns a Vercel AI
 // SDK `streamText` call into a Sharely `Handler` for you. You bring the
 // model + prompt + tools; the adapter handles the AgentEvent translation.
 //
@@ -11,12 +11,9 @@
 
 import { streamText } from 'ai';
 import { gateway } from '@ai-sdk/gateway';
-import {
-  fromVercelAI,
-  toCoreMessages,
-} from '@sharely/adapter-vercel-ai';
-import { semanticSearch } from '@sharely/adapter-vercel-ai/tools';
-import type { Handler } from '@sharely/protocol';
+import { fromVercelAI, toCoreMessages } from '@sharelyai/adapter-vercel-ai';
+import { semanticSearch } from '@sharelyai/adapter-vercel-ai/tools';
+import type { Handler } from '@sharelyai/protocol';
 
 const MODEL = 'anthropic/claude-sonnet-4-6';
 

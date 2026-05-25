@@ -11,33 +11,33 @@ npm i @sharely/server @sharely/protocol
 ## Minimum viable server
 
 ```ts
-import { createSharelyServer } from "@sharely/server";
+import { createSharelyServer } from '@sharelyai/server';
 
 const app = createSharelyServer({
-  apiUrl: process.env.SHARELY_API_URL!,   // e.g. https://sharely-develop.fly.dev
+  apiUrl: process.env.SHARELY_API_URL!, // e.g. https://sharely-develop.fly.dev
   workspaceId: process.env.WORKSPACE_ID!,
   allowedOrigins: process.env.ALLOWED_ORIGINS,
   handler: async function* (input) {
-    yield { type: "message_start", role: "assistant", model: "echo-v1" };
-    yield { type: "content_delta", delta: `Echo: ${input.message}` };
+    yield { type: 'message_start', role: 'assistant', model: 'echo-v1' };
+    yield { type: 'content_delta', delta: `Echo: ${input.message}` };
     yield {
-      type: "message_end",
-      finishReason: "stop",
-      tokenUsage: { inputTokens: 0, outputTokens: 0, totalTokens: 0 }
+      type: 'message_end',
+      finishReason: 'stop',
+      tokenUsage: { inputTokens: 0, outputTokens: 0, totalTokens: 0 },
     };
-  }
+  },
 });
 
 app.listen(8080);
 ```
 
-That's it. Customer-side adapter packages (`@sharely/adapter-vercel-ai`, `@sharely/adapter-temporal`) produce the same `Handler` shape — see their READMEs.
+That's it. Customer-side adapter packages (`@sharelyai/adapter-vercel-ai`, `@sharelyai/adapter-temporal`) produce the same `Handler` shape — see their READMEs.
 
 ## What this owns (so you don't reimplement it)
 
 - **HTTP**: Express, CORS, 10 MB body limits, auth-keyed rate limit on the chat route.
 - **Auth split**: extracts the incoming bearer, rejects `null`/`undefined`/`public`. The configured `workspaceApiKey` is used **only** to call `/api-authenticated` (validating the incoming user token is admin-class). Every other Backplane call (persistence, RAG) forwards the **incoming user JWT** so the platform's RBAC checks (`getTokenRoleId` against `agentThread.roleId`) operate against the real user. This server never mints tokens.
-- **Persistence**: routes user + assistant `agentMessage` rows through `@sharely/api` against the agent-threads Backplane, including the rich columns (`thinkingSteps`, `toolCalls`, `sources`, `tokenUsage`).
+- **Persistence**: routes user + assistant `agentMessage` rows through `@sharelyai/api` against the agent-threads Backplane, including the rich columns (`thinkingSteps`, `toolCalls`, `sources`, `tokenUsage`).
 - **Streaming**: extracted SSE encoder from `sharelyai-be/agent/sse.ts`, client-disconnect → `AbortSignal`.
 - **Routes**:
   - `POST /agent/threads/:threadId/chat` — the agent-turn entrypoint
@@ -52,9 +52,9 @@ Mint tokens, persist messages, define new event types, or invent cancellation pr
 
 ## See also
 
-- [`@sharely/protocol`](https://www.npmjs.com/package/@sharely/protocol) — wire types, `Handler` contract
-- [`@sharely/api`](https://www.npmjs.com/package/@sharely/api) — typed client to the Sharely platform Backplane
-- [`@sharely/tools`](https://www.npmjs.com/package/@sharely/tools) — first-party tool definitions
+- [`@sharelyai/protocol`](https://www.npmjs.com/package/@sharely/protocol) — wire types, `Handler` contract
+- [`@sharelyai/api`](https://www.npmjs.com/package/@sharely/api) — typed client to the Sharely platform Backplane
+- [`@sharelyai/tools`](https://www.npmjs.com/package/@sharely/tools) — first-party tool definitions
 
 ## Smoke
 

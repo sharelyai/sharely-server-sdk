@@ -1,5 +1,5 @@
 {
-  "name": "@sharely/server",
+  "name": "@sharelyai/server",
   "version": "0.0.1",
   "description": "Express runtime for Sharely-compatible agent servers. HTTP, auth, persistence, SSE encoding.",
   "license": "MIT",
@@ -22,8 +22,8 @@
     "clean": "rm -rf dist .turbo"
   },
   "dependencies": {
-    "@sharely/api": "*",
-    "@sharely/protocol": "*",
+    "@sharelyai/api": "*",
+    "@sharelyai/protocol": "*",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "express": "^4.21.1",

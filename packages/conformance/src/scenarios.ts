@@ -1,4 +1,4 @@
-import type { AgentEvent } from "@sharely/protocol";
+import type { AgentEvent } from '@sharelyai/protocol';
 
 export interface ConformanceScenario {
   name: string;
@@ -20,70 +20,75 @@ const usage = { inputTokens: 8, outputTokens: 4, totalTokens: 12 };
  */
 export const scenarios: Record<string, ConformanceScenario> = {
   textOnly: {
-    name: "text-only",
-    description: "Plain text answer, no tools, no thinking.",
-    inputMessage: "say hello",
+    name: 'text-only',
+    description: 'Plain text answer, no tools, no thinking.',
+    inputMessage: 'say hello',
     golden: [
-      { type: "message_start", role: "assistant", model: "conformance" },
-      { type: "content_delta", delta: "Hello, " },
-      { type: "content_delta", delta: "world." },
-      { type: "content_end" },
-      { type: "message_end", finishReason: "stop", tokenUsage: usage }
-    ]
+      { type: 'message_start', role: 'assistant', model: 'conformance' },
+      { type: 'content_delta', delta: 'Hello, ' },
+      { type: 'content_delta', delta: 'world.' },
+      { type: 'content_end' },
+      { type: 'message_end', finishReason: 'stop', tokenUsage: usage },
+    ],
   },
 
   thinking: {
-    name: "thinking",
-    description: "A thinking step precedes the answer.",
-    inputMessage: "think then answer",
+    name: 'thinking',
+    description: 'A thinking step precedes the answer.',
+    inputMessage: 'think then answer',
     golden: [
-      { type: "message_start", role: "assistant", model: "conformance" },
-      { type: "thinking_start", thinkingId: "t1", title: "Reasoning" },
-      { type: "thinking_delta", thinkingId: "t1", delta: "Considering..." },
-      { type: "thinking_end", thinkingId: "t1", status: "completed", durationMs: 30 },
-      { type: "content_delta", delta: "Done." },
-      { type: "content_end" },
-      { type: "message_end", finishReason: "stop", tokenUsage: usage }
-    ]
+      { type: 'message_start', role: 'assistant', model: 'conformance' },
+      { type: 'thinking_start', thinkingId: 't1', title: 'Reasoning' },
+      { type: 'thinking_delta', thinkingId: 't1', delta: 'Considering...' },
+      {
+        type: 'thinking_end',
+        thinkingId: 't1',
+        status: 'completed',
+        durationMs: 30,
+      },
+      { type: 'content_delta', delta: 'Done.' },
+      { type: 'content_end' },
+      { type: 'message_end', finishReason: 'stop', tokenUsage: usage },
+    ],
   },
 
   toolCall: {
-    name: "tool-call",
-    description: "One tool call, then a cited answer.",
-    inputMessage: "look it up",
+    name: 'tool-call',
+    description: 'One tool call, then a cited answer.',
+    inputMessage: 'look it up',
     golden: [
-      { type: "message_start", role: "assistant", model: "conformance" },
+      { type: 'message_start', role: 'assistant', model: 'conformance' },
       {
-        type: "tool_call_start",
-        toolCallId: "tc1",
-        name: "search_knowledge",
-        input: { query: "topic" }
+        type: 'tool_call_start',
+        toolCallId: 'tc1',
+        name: 'search_knowledge',
+        input: { query: 'topic' },
       },
       {
-        type: "tool_call_end",
-        toolCallId: "tc1",
+        type: 'tool_call_end',
+        toolCallId: 'tc1',
         output: { totalResults: 1 },
-        durationMs: 20
+        durationMs: 20,
       },
-      { type: "content_delta", delta: "Per the docs." },
+      { type: 'content_delta', delta: 'Per the docs.' },
       {
-        type: "sources",
-        sources: [{ id: "k1", type: "knowledge", title: "Doc" }]
+        type: 'sources',
+        sources: [{ id: 'k1', type: 'knowledge', title: 'Doc' }],
       },
-      { type: "content_end" },
-      { type: "message_end", finishReason: "stop", tokenUsage: usage }
-    ]
+      { type: 'content_end' },
+      { type: 'message_end', finishReason: 'stop', tokenUsage: usage },
+    ],
   },
 
   error: {
-    name: "error",
-    description: "The agent fails mid-turn and emits an error event.",
-    inputMessage: "trigger a failure",
+    name: 'error',
+    description: 'The agent fails mid-turn and emits an error event.',
+    inputMessage: 'trigger a failure',
     golden: [
-      { type: "message_start", role: "assistant", model: "conformance" },
-      { type: "error", error: "upstream model unavailable" }
-    ]
-  }
+      { type: 'message_start', role: 'assistant', model: 'conformance' },
+      { type: 'error', error: 'upstream model unavailable' },
+    ],
+  },
 };
 
 export const allScenarios: ConformanceScenario[] = Object.values(scenarios);

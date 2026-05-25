@@ -3,16 +3,16 @@ import type {
   AgentInput,
   Handler,
   Source,
-  TokenUsage
-} from "@sharely/protocol";
+  TokenUsage,
+} from '@sharelyai/protocol';
 import type {
   VercelAdapterOptions,
   VercelStreamPart,
-  VercelStreamResult
-} from "./types.js";
+  VercelStreamResult,
+} from './types.js';
 
 const readText = (p: VercelStreamPart): string =>
-  p.textDelta ?? p.text ?? p.delta ?? "";
+  p.textDelta ?? p.text ?? p.delta ?? '';
 
 const readUsage = (p: VercelStreamPart): TokenUsage => {
   const u = p.usage ?? {};
@@ -21,7 +21,7 @@ const readUsage = (p: VercelStreamPart): TokenUsage => {
   return {
     inputTokens,
     outputTokens,
-    totalTokens: u.totalTokens ?? inputTokens + outputTokens
+    totalTokens: u.totalTokens ?? inputTokens + outputTokens,
   };
 };
 
@@ -36,25 +36,25 @@ const readUsage = (p: VercelStreamPart): TokenUsage => {
  */
 export const fromVercelAI = (
   produce: (
-    input: AgentInput
+    input: AgentInput,
   ) => VercelStreamResult | Promise<VercelStreamResult>,
-  options: VercelAdapterOptions = {}
+  options: VercelAdapterOptions = {},
 ): Handler =>
   async function* (input): AsyncIterable<AgentEvent> {
     yield {
-      type: "message_start",
-      role: "assistant",
-      model: options.model ?? "vercel-ai"
+      type: 'message_start',
+      role: 'assistant',
+      model: options.model ?? 'vercel-ai',
     };
 
     const sources: Source[] = [];
     let thinkingId: string | null = null;
     let thinkingSeq = 0;
-    let finishReason = "stop";
+    let finishReason = 'stop';
     let tokenUsage: TokenUsage = {
       inputTokens: 0,
       outputTokens: 0,
-      totalTokens: 0
+      totalTokens: 0,
     };
 
     let result: VercelStreamResult;
@@ -62,8 +62,8 @@ export const fromVercelAI = (
       result = await produce(input);
     } catch (err) {
       yield {
-        type: "error",
-        error: err instanceof Error ? err.message : "stream creation failed"
+        type: 'error',
+        error: err instanceof Error ? err.message : 'stream creation failed',
       };
       return;
     }
@@ -71,70 +71,70 @@ export const fromVercelAI = (
     for await (const part of result.fullStream) {
       if (input.signal.aborted) return;
 
-      if (part.type === "reasoning" || part.type === "reasoning-delta") {
+      if (part.type === 'reasoning' || part.type === 'reasoning-delta') {
         if (!thinkingId) {
           thinkingId = `think-${++thinkingSeq}`;
-          yield { type: "thinking_start", thinkingId, title: "Reasoning" };
+          yield { type: 'thinking_start', thinkingId, title: 'Reasoning' };
         }
-        yield { type: "thinking_delta", thinkingId, delta: readText(part) };
+        yield { type: 'thinking_delta', thinkingId, delta: readText(part) };
         continue;
       }
 
       // Any non-reasoning part closes an open thinking step.
       if (thinkingId) {
         yield {
-          type: "thinking_end",
+          type: 'thinking_end',
           thinkingId,
-          status: "completed",
-          durationMs: 0
+          status: 'completed',
+          durationMs: 0,
         };
         thinkingId = null;
       }
 
       switch (part.type) {
-        case "text-delta":
-        case "text": {
+        case 'text-delta':
+        case 'text': {
           const delta = readText(part);
-          if (delta) yield { type: "content_delta", delta };
+          if (delta) yield { type: 'content_delta', delta };
           break;
         }
-        case "tool-call":
+        case 'tool-call':
           yield {
-            type: "tool_call_start",
-            toolCallId: String(part.toolCallId ?? ""),
-            name: String(part.toolName ?? part.name ?? "tool"),
-            input: (part.args ?? part.input ?? {}) as Record<string, unknown>
+            type: 'tool_call_start',
+            toolCallId: String(part.toolCallId ?? ''),
+            name: String(part.toolName ?? part.name ?? 'tool'),
+            input: (part.args ?? part.input ?? {}) as Record<string, unknown>,
           };
           break;
-        case "tool-result":
+        case 'tool-result':
           yield {
-            type: "tool_call_end",
-            toolCallId: String(part.toolCallId ?? ""),
+            type: 'tool_call_end',
+            toolCallId: String(part.toolCallId ?? ''),
             output: part.result ?? part.output,
-            durationMs: 0
+            durationMs: 0,
           };
           break;
-        case "source": {
+        case 'source': {
           const s = part.source ?? {};
           sources.push({
             id: String(s.id ?? `src-${sources.length + 1}`),
-            type: "semantic",
-            title: String(s.title ?? "Source"),
-            ...(s.url ? { url: s.url } : {})
+            type: 'semantic',
+            title: String(s.title ?? 'Source'),
+            ...(s.url ? { url: s.url } : {}),
           });
           break;
         }
-        case "error":
+        case 'error':
           yield {
-            type: "error",
+            type: 'error',
             error:
               part.error instanceof Error
                 ? part.error.message
-                : String(part.error ?? "stream error")
+                : String(part.error ?? 'stream error'),
           };
           return;
-        case "finish":
-          finishReason = part.finishReason ?? "stop";
+        case 'finish':
+          finishReason = part.finishReason ?? 'stop';
           tokenUsage = readUsage(part);
           break;
         default:
@@ -144,7 +144,7 @@ export const fromVercelAI = (
     }
 
     if (input.signal.aborted) return;
-    if (sources.length > 0) yield { type: "sources", sources };
-    yield { type: "content_end" };
-    yield { type: "message_end", finishReason, tokenUsage };
+    if (sources.length > 0) yield { type: 'sources', sources };
+    yield { type: 'content_end' };
+    yield { type: 'message_end', finishReason, tokenUsage };
   };

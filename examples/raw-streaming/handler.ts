@@ -10,7 +10,7 @@
 // (model → optional tool call → model → answer) with thinking, tool
 // streaming, batched sources, and aggregated token usage.
 
-import type { AgentInput, Handler, Source } from '@sharely/protocol';
+import type { AgentInput, Handler, Source } from '@sharelyai/protocol';
 
 export const rawHandler: Handler = async function* (input) {
   yield { type: 'message_start', role: 'assistant', model: 'raw-v1' };
@@ -68,9 +68,7 @@ export const rawHandler: Handler = async function* (input) {
       yield {
         type: 'tool_call_end',
         toolCallId: turn.toolCall.id,
-        ...(result.error
-          ? { error: result.error }
-          : { output: result.output }),
+        ...(result.error ? { error: result.error } : { output: result.output }),
         durationMs: Date.now() - started,
       };
 

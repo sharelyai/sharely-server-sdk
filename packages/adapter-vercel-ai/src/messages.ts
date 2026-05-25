@@ -1,7 +1,7 @@
-import type { AgentInput } from "@sharely/protocol";
+import type { AgentInput } from '@sharelyai/protocol';
 
 export interface CoreMessage {
-  role: "user" | "assistant" | "system";
+  role: 'user' | 'assistant' | 'system';
   content: string;
 }
 
@@ -12,7 +12,7 @@ export interface CoreMessage {
 export const toCoreMessages = (input: AgentInput): CoreMessage[] => [
   ...input.history.map(m => ({
     role: m.role,
-    content: m.content ?? ""
+    content: m.content ?? '',
   })),
-  { role: "user" as const, content: input.message }
+  { role: 'user' as const, content: input.message },
 ];

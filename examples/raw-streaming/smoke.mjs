@@ -7,7 +7,7 @@
 //   npx turbo run build --filter=@sharely/conformance
 //   node examples/raw-streaming/smoke.mjs
 
-import { validateEventStream } from '@sharely/conformance';
+import { validateEventStream } from '@sharelyai/conformance';
 
 // ---------- JS port of the rawHandler (handler.ts) ----------
 
@@ -35,8 +35,10 @@ const runTool = async (name, args) => {
     output: { answer: 42, query: args.q },
     sources: [
       {
-        id: 'src-1', type: 'knowledge',
-        title: 'Reference doc', url: 'https://example.com/doc',
+        id: 'src-1',
+        type: 'knowledge',
+        title: 'Reference doc',
+        url: 'https://example.com/doc',
       },
     ],
   };
@@ -64,7 +66,12 @@ const rawHandler = async function* (input) {
       const tid = `t-${iter}`;
       yield { type: 'thinking_start', thinkingId: tid, title: 'Reasoning' };
       yield { type: 'thinking_delta', thinkingId: tid, delta: turn.thinking };
-      yield { type: 'thinking_end', thinkingId: tid, status: 'completed', durationMs: 0 };
+      yield {
+        type: 'thinking_end',
+        thinkingId: tid,
+        status: 'completed',
+        durationMs: 0,
+      };
     }
 
     for (const chunk of chunked(turn.text, 16)) {
@@ -107,7 +114,9 @@ const rawHandler = async function* (input) {
     type: 'message_end',
     finishReason,
     tokenUsage: {
-      inputTokens, outputTokens, totalTokens: inputTokens + outputTokens,
+      inputTokens,
+      outputTokens,
+      totalTokens: inputTokens + outputTokens,
     },
   };
 };
@@ -119,9 +128,19 @@ const input = {
   message: 'what is the answer?',
   history: [],
   context: {
-    workspaceId: 'ws', threadId: 't', authorization: 'Bearer x',
+    workspaceId: 'ws',
+    threadId: 't',
+    authorization: 'Bearer x',
     api: { baseUrl: 'x', workspaceId: 'ws' },
-    trace: { traceId: 'tr', messageId: 'm', event() {}, child() { return this; }, end() {} },
+    trace: {
+      traceId: 'tr',
+      messageId: 'm',
+      event() {},
+      child() {
+        return this;
+      },
+      end() {},
+    },
   },
   signal: new AbortController().signal,
 };
@@ -129,7 +148,8 @@ const input = {
 for await (const e of rawHandler(input)) collected.push(e);
 
 console.log('Stream:');
-for (const e of collected) console.log(' ', e.type, JSON.stringify(e).slice(0, 100));
+for (const e of collected)
+  console.log(' ', e.type, JSON.stringify(e).slice(0, 100));
 
 // ---------- Assertions ----------
 
@@ -177,8 +197,7 @@ const tailOk =
 
 const sourcesEvent = collected.find(e => e.type === 'sources');
 const sourcesShapeOk =
-  sourcesEvent?.sources?.length === 1 &&
-  sourcesEvent.sources[0].id === 'src-1';
+  sourcesEvent?.sources?.length === 1 && sourcesEvent.sources[0].id === 'src-1';
 
 // Reassembled content should be both turns concatenated.
 const reassembled = collected
@@ -214,18 +233,63 @@ const abortOk = !abortedCollected.some(e =>
 );
 
 console.log('\n--- assertions ---');
-console.log('structural:        ', structural.ok ? 'PASS' : `FAIL: ${structural.errors.join('; ')}`);
-console.log('header order:      ', headerOk ? 'PASS' : `FAIL (got [0]=${types[0]})`);
-console.log('thinking trio:     ', thinkingOk ? 'PASS' : `FAIL (got [1..3]=${types.slice(1, 4).join(', ')})`);
-console.log('tool position:     ', toolPositionOk ? 'PASS' : `FAIL (tcStart@${tcStartIdx}, tcEnd@${tcEndIdx})`);
-console.log('tail order:        ', tailOk ? 'PASS' : `FAIL (sources@${sourcesIdx}, content_end@${contentEndIdx}, message_end@${messageEndIdx})`);
-console.log('reassembles 2 turns:', reassembleOk ? 'PASS' : `FAIL\n   expected: ${expectedReassembly}\n   got:      ${reassembled}`);
-console.log('sources shape:     ', sourcesShapeOk ? 'PASS' : `FAIL (${JSON.stringify(sourcesEvent)})`);
-console.log('tokens summed:     ', tokensOk ? 'PASS' : `FAIL (got ${JSON.stringify(me?.tokenUsage)})`);
-console.log('tool round-trip:   ', toolRoundtripOk ? 'PASS' : `FAIL (output=${JSON.stringify(tcEnd?.output)})`);
-console.log('abort halts:       ', abortOk ? 'PASS' : `FAIL (got ${abortedCollected.map(e => e.type).join(', ')})`);
+console.log(
+  'structural:        ',
+  structural.ok ? 'PASS' : `FAIL: ${structural.errors.join('; ')}`,
+);
+console.log(
+  'header order:      ',
+  headerOk ? 'PASS' : `FAIL (got [0]=${types[0]})`,
+);
+console.log(
+  'thinking trio:     ',
+  thinkingOk ? 'PASS' : `FAIL (got [1..3]=${types.slice(1, 4).join(', ')})`,
+);
+console.log(
+  'tool position:     ',
+  toolPositionOk ? 'PASS' : `FAIL (tcStart@${tcStartIdx}, tcEnd@${tcEndIdx})`,
+);
+console.log(
+  'tail order:        ',
+  tailOk
+    ? 'PASS'
+    : `FAIL (sources@${sourcesIdx}, content_end@${contentEndIdx}, message_end@${messageEndIdx})`,
+);
+console.log(
+  'reassembles 2 turns:',
+  reassembleOk
+    ? 'PASS'
+    : `FAIL\n   expected: ${expectedReassembly}\n   got:      ${reassembled}`,
+);
+console.log(
+  'sources shape:     ',
+  sourcesShapeOk ? 'PASS' : `FAIL (${JSON.stringify(sourcesEvent)})`,
+);
+console.log(
+  'tokens summed:     ',
+  tokensOk ? 'PASS' : `FAIL (got ${JSON.stringify(me?.tokenUsage)})`,
+);
+console.log(
+  'tool round-trip:   ',
+  toolRoundtripOk ? 'PASS' : `FAIL (output=${JSON.stringify(tcEnd?.output)})`,
+);
+console.log(
+  'abort halts:       ',
+  abortOk
+    ? 'PASS'
+    : `FAIL (got ${abortedCollected.map(e => e.type).join(', ')})`,
+);
 
-const allOk = structural.ok && headerOk && thinkingOk && toolPositionOk
-  && tailOk && reassembleOk && sourcesShapeOk && tokensOk && toolRoundtripOk && abortOk;
+const allOk =
+  structural.ok &&
+  headerOk &&
+  thinkingOk &&
+  toolPositionOk &&
+  tailOk &&
+  reassembleOk &&
+  sourcesShapeOk &&
+  tokensOk &&
+  toolRoundtripOk &&
+  abortOk;
 console.log(allOk ? '\nall checks passed' : '\nSMOKE FAILED');
 process.exit(allOk ? 0 : 1);

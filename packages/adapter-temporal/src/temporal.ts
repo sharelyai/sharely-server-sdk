@@ -1,7 +1,12 @@
-import type { AgentInput, Handler } from "@sharely/protocol";
-import { pollingHandler } from "./poll.js";
-import { AGENT_EVENTS_QUERY } from "./sink.js";
-import type { AgentEventPage, AgentEventSource, FromTemporalOptions } from "./types.js";
+import { pollingHandler } from './poll.js';
+import { AGENT_EVENTS_QUERY } from './sink.js';
+
+import type { AgentInput, Handler } from '@sharelyai/protocol';
+import type {
+  AgentEventPage,
+  AgentEventSource,
+  FromTemporalOptions,
+} from './types.js';
 
 /** Plain, serializable subset of AgentContext passed into the workflow. */
 const workflowContext = (input: AgentInput) => ({
@@ -12,7 +17,7 @@ const workflowContext = (input: AgentInput) => ({
   temporalUserId: input.context.temporalUserId,
   roleId: input.context.roleId,
   languageId: input.context.languageId,
-  topK: input.context.topK
+  topK: input.context.topK,
 });
 
 /**
@@ -37,14 +42,14 @@ export const fromTemporal = (options: FromTemporalOptions): Handler => {
         {
           message: input.message,
           history: input.history,
-          context: workflowContext(input)
-        }
-      ]
+          context: workflowContext(input),
+        },
+      ],
     });
 
     return {
       poll: cursor => handle.query<AgentEventPage>(AGENT_EVENTS_QUERY, cursor),
-      cancel: () => handle.cancel()
+      cancel: () => handle.cancel(),
     };
   };
 

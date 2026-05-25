@@ -7,7 +7,7 @@
 //   SHARELY_WORKSPACE_ID      — your workspace id
 //   SHARELY_WORKSPACE_API_KEY — workspace access-key token
 
-import { createSharelyServer } from '@sharely/server';
+import { createSharelyServer } from '@sharelyai/server';
 import { rawHandler } from './handler.js';
 
 const app = createSharelyServer({

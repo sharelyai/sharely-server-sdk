@@ -1,14 +1,14 @@
 # Adapter-backed — Vercel AI SDK
 
-Drive an agent with [`ai`](https://sdk.vercel.ai/)'s `streamText`. [`@sharely/adapter-vercel-ai`](../../packages/adapter-vercel-ai/) translates the resulting `fullStream` into Sharely `AgentEvent`s for you — no protocol mapping in your code.
+Drive an agent with [`ai`](https://sdk.vercel.ai/)'s `streamText`. [`@sharelyai/adapter-vercel-ai`](../../packages/adapter-vercel-ai/) translates the resulting `fullStream` into Sharely `AgentEvent`s for you — no protocol mapping in your code.
 
 ## Files
 
-| File | Purpose |
-|---|---|
-| [`handler.ts`](./handler.ts) | The whole agent — ~15 lines. `fromVercelAI(input => streamText({...}))`. |
-| [`server.ts`](./server.ts) | Wires the handler into `createSharelyServer`. |
-| [`smoke.mjs`](./smoke.mjs) | Runnable proof: feeds a fake `fullStream` into `fromVercelAI` and asserts the emitted `AgentEvent` sequence. |
+| File                         | Purpose                                                                                                      |
+| ---------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| [`handler.ts`](./handler.ts) | The whole agent — ~15 lines. `fromVercelAI(input => streamText({...}))`.                                     |
+| [`server.ts`](./server.ts)   | Wires the handler into `createSharelyServer`.                                                                |
+| [`smoke.mjs`](./smoke.mjs)   | Runnable proof: feeds a fake `fullStream` into `fromVercelAI` and asserts the emitted `AgentEvent` sequence. |
 
 ## Run the smoke
 
@@ -30,7 +30,7 @@ Reach for [Pattern C](../anthropic-sdk-direct/) instead when you need direct con
 
 - `streamText({ model, system, messages: toCoreMessages(input), tools, abortSignal: input.signal })` — the full Vercel SDK shape with the conversion helpers the adapter ships.
 - `toCoreMessages(input)` flattens the Sharely `AgentInput`'s `history` + current `message` into the `messages` array `streamText` expects.
-- `semantic_search` is wired in from [`@sharely/adapter-vercel-ai/tools`](../../packages/adapter-vercel-ai/src/tools.ts) — the first-party Sharely tools wrapped as Vercel `tool()`s. `semanticSearch(input.context)` is backed by `@sharely/api`'s `rag()` out of the box; the other 6 tools need executors you provide.
+- `semantic_search` is wired in from [`@sharelyai/adapter-vercel-ai/tools`](../../packages/adapter-vercel-ai/src/tools.ts) — the first-party Sharely tools wrapped as Vercel `tool()`s. `semanticSearch(input.context)` is backed by `@sharelyai/api`'s `rag()` out of the box; the other 6 tools need executors you provide.
 - `abortSignal: input.signal` — client disconnect flows through to the model's HTTP stream.
 
 ## Swap the provider
@@ -58,7 +58,7 @@ import {
   getTaxonomyKnowledge,
   getWorkspaceStats,
   listRoles,
-} from '@sharely/adapter-vercel-ai/tools';
+} from '@sharelyai/adapter-vercel-ai/tools';
 
 tools: {
   semantic_search: semanticSearch(input.context),

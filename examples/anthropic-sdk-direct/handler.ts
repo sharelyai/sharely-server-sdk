@@ -16,7 +16,7 @@ import type {
   Handler,
   Source,
   ToolResult,
-} from '@sharely/protocol';
+} from '@sharelyai/protocol';
 
 export interface ToolDef {
   name: string;

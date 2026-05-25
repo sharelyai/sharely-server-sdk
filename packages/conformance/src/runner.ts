@@ -4,47 +4,51 @@ import type {
   AgentInput,
   Handler,
   SharelyAPIClient,
-  TraceSpan
-} from "@sharely/protocol";
-import { checkGolden, validateEventStream, type ValidationResult } from "./validate.js";
-import type { ConformanceScenario } from "./scenarios.js";
+  TraceSpan,
+} from '@sharelyai/protocol';
+import {
+  checkGolden,
+  validateEventStream,
+  type ValidationResult,
+} from './validate.js';
+import type { ConformanceScenario } from './scenarios.js';
 
 const noopApi: SharelyAPIClient = {
-  baseUrl: "http://conformance.local",
-  workspaceId: "ws-conformance"
+  baseUrl: 'http://conformance.local',
+  workspaceId: 'ws-conformance',
 };
 
 const makeTrace = (): TraceSpan => {
   const span: TraceSpan = {
-    traceId: "trace-conformance",
-    messageId: "msg-conformance",
+    traceId: 'trace-conformance',
+    messageId: 'msg-conformance',
     event: () => {},
     child: () => span,
-    end: () => {}
+    end: () => {},
   };
   return span;
 };
 
 export const makeTestContext = (
-  overrides: Partial<AgentContext> = {}
+  overrides: Partial<AgentContext> = {},
 ): AgentContext => ({
-  workspaceId: "ws-conformance",
-  threadId: "thread-conformance",
-  authorization: "Bearer conformance",
+  workspaceId: 'ws-conformance',
+  threadId: 'thread-conformance',
+  authorization: 'Bearer conformance',
   api: noopApi,
   trace: makeTrace(),
-  ...overrides
+  ...overrides,
 });
 
 export const makeTestInput = (
   message: string,
-  overrides: Partial<AgentInput> = {}
+  overrides: Partial<AgentInput> = {},
 ): AgentInput => ({
   message,
   history: [],
   context: makeTestContext(),
   signal: new AbortController().signal,
-  ...overrides
+  ...overrides,
 });
 
 export interface ConformanceReport {
@@ -60,7 +64,7 @@ export interface ConformanceReport {
 export const runHandlerConformance = async (
   handler: Handler,
   scenario: ConformanceScenario,
-  inputOverrides: Partial<AgentInput> = {}
+  inputOverrides: Partial<AgentInput> = {},
 ): Promise<ConformanceReport> => {
   const input = makeTestInput(scenario.inputMessage, inputOverrides);
   const events: AgentEvent[] = [];
@@ -81,13 +85,12 @@ export const runHandlerConformance = async (
     events,
     structural,
     golden,
-    ...(threw !== undefined && { threw })
+    ...(threw !== undefined && { threw }),
   };
 };
 
 /** A Handler that simply replays a scenario's golden stream. Proves the harness self-consistency. */
-export const referenceHandler =
-  (scenario: ConformanceScenario): Handler =>
+export const referenceHandler = (scenario: ConformanceScenario): Handler =>
   async function* () {
     for (const event of scenario.golden) yield event;
   };

@@ -1,5 +1,5 @@
 {
-  "name": "@sharely/conformance",
+  "name": "@sharelyai/conformance",
   "version": "0.0.1",
   "description": "Shared conformance harness — validates AgentEvent streams against the wire-protocol contract.",
   "license": "MIT",
@@ -20,7 +20,7 @@
     "clean": "rm -rf dist .turbo"
   },
   "dependencies": {
-    "@sharely/protocol": "*"
+    "@sharelyai/protocol": "*"
   },
   "devDependencies": {
     "typescript": "^5.6.3"

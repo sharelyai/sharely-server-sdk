@@ -15,7 +15,7 @@ import type {
   AgentInput,
   Handler,
   Source,
-} from '@sharely/protocol';
+} from '@sharelyai/protocol';
 
 export interface OpenAIAgentsHandlerOptions {
   agent: Agent;
@@ -165,9 +165,7 @@ export const createOpenAIAgentsHandler = (
 const pickToolCallId = (item: Record<string, unknown>): string => {
   const direct = item['callId'] ?? item['id'];
   if (typeof direct === 'string' && direct) return direct;
-  const raw = item['rawItem'] as
-    | { callId?: string; id?: string }
-    | undefined;
+  const raw = item['rawItem'] as { callId?: string; id?: string } | undefined;
   const fromRaw = raw?.callId ?? raw?.id;
   if (typeof fromRaw === 'string' && fromRaw) return fromRaw;
   throw new Error(
@@ -185,7 +183,9 @@ const pickToolName = (item: Record<string, unknown>): string => {
   );
 };
 
-const pickToolInput = (item: Record<string, unknown>): Record<string, unknown> => {
+const pickToolInput = (
+  item: Record<string, unknown>,
+): Record<string, unknown> => {
   const raw = item['rawItem'] as { arguments?: unknown } | undefined;
   const candidates = [item['arguments'], item['input'], raw?.arguments];
   for (const c of candidates) {

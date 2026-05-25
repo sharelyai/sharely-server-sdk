@@ -10,7 +10,7 @@
 
 import { Agent, tool } from '@openai/agents';
 import { z } from 'zod';
-import { createSharelyServer } from '@sharely/server';
+import { createSharelyServer } from '@sharelyai/server';
 import { createOpenAIAgentsHandler } from './handler.js';
 
 const lookup = tool({

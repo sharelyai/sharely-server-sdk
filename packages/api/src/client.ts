@@ -1,10 +1,18 @@
-import type { SharelyAPIClient as ProtocolStub } from "@sharely/protocol";
-import { defaultTransport, type Transport } from "./transport.js";
+import { defaultTransport, type Transport } from './transport.js';
+
+import type { SharelyAPIClient as ProtocolStub } from '@sharelyai/protocol';
 import type {
-  AgentThread, AgentThreadWithMessages, CreateThreadInput, RagInput, RagMatch,
-  StoreMessageInput, StoredAgentMessage, ThreadListInput, ThreadListResponse,
-  TokenValidationResult
-} from "./types.js";
+  AgentThread,
+  AgentThreadWithMessages,
+  CreateThreadInput,
+  RagInput,
+  RagMatch,
+  StoreMessageInput,
+  StoredAgentMessage,
+  ThreadListInput,
+  ThreadListResponse,
+  TokenValidationResult,
+} from './types.js';
 
 export interface SharelyAPIClientConfig {
   baseUrl: string;
@@ -21,7 +29,7 @@ const qs = (params: Readonly<Record<string, unknown>>): string => {
     sp.append(k, String(v));
   }
   const s = sp.toString();
-  return s ? `?${s}` : "";
+  return s ? `?${s}` : '';
 };
 
 export interface SharelyAPIClient extends ProtocolStub {
@@ -33,7 +41,10 @@ export interface SharelyAPIClient extends ProtocolStub {
     list(input?: ThreadListInput): Promise<ThreadListResponse>;
     get(threadId: string): Promise<AgentThreadWithMessages>;
     messages: {
-      create(threadId: string, message: StoreMessageInput): Promise<StoredAgentMessage>;
+      create(
+        threadId: string,
+        message: StoreMessageInput,
+      ): Promise<StoredAgentMessage>;
     };
   };
   tokens: {
@@ -42,7 +53,9 @@ export interface SharelyAPIClient extends ProtocolStub {
   rag(input: RagInput): Promise<RagMatch[]>;
 }
 
-export const createSharelyAPIClient = (cfg: SharelyAPIClientConfig): SharelyAPIClient => {
+export const createSharelyAPIClient = (
+  cfg: SharelyAPIClientConfig,
+): SharelyAPIClient => {
   const transport = cfg.transport ?? defaultTransport(cfg.baseUrl);
   const headers = { authorization: cfg.authorization };
   const ws = encodeURIComponent(cfg.workspaceId);
@@ -54,37 +67,61 @@ export const createSharelyAPIClient = (cfg: SharelyAPIClientConfig): SharelyAPIC
     ...(cfg.roleId !== undefined && { roleId: cfg.roleId }),
     threads: {
       create: async input =>
-        (await transport<AgentThread>({ method: "POST", url: threadsBase, body: input, headers })).data,
+        (
+          await transport<AgentThread>({
+            method: 'POST',
+            url: threadsBase,
+            body: input,
+            headers,
+          })
+        ).data,
       list: async (input = {}) =>
-        (await transport<ThreadListResponse>({
-          method: "GET", url: `${threadsBase}${qs({ ...input })}`, headers
-        })).data,
+        (
+          await transport<ThreadListResponse>({
+            method: 'GET',
+            url: `${threadsBase}${qs({ ...input })}`,
+            headers,
+          })
+        ).data,
       get: async threadId =>
-        (await transport<AgentThreadWithMessages>({
-          method: "GET", url: `${threadsBase}/${encodeURIComponent(threadId)}`, headers
-        })).data,
+        (
+          await transport<AgentThreadWithMessages>({
+            method: 'GET',
+            url: `${threadsBase}/${encodeURIComponent(threadId)}`,
+            headers,
+          })
+        ).data,
       messages: {
         create: async (threadId, message) =>
-          (await transport<StoredAgentMessage>({
-            method: "POST",
-            url: `${threadsBase}/${encodeURIComponent(threadId)}/messages`,
-            body: message, headers
-          })).data
-      }
+          (
+            await transport<StoredAgentMessage>({
+              method: 'POST',
+              url: `${threadsBase}/${encodeURIComponent(threadId)}/messages`,
+              body: message,
+              headers,
+            })
+          ).data,
+      },
     },
     tokens: {
       validate: async token =>
-        (await transport<TokenValidationResult>({
-          method: "POST",
-          url: `/v1/workspaces/${ws}/api-authenticated`,
-          body: { token }, headers
-        })).data
+        (
+          await transport<TokenValidationResult>({
+            method: 'POST',
+            url: `/v1/workspaces/${ws}/api-authenticated`,
+            body: { token },
+            headers,
+          })
+        ).data,
     },
     rag: async input =>
-      (await transport<RagMatch[]>({
-        method: "POST",
-        url: `/v1/workspaces/${ws}/agent/rag`,
-        body: input, headers
-      })).data
+      (
+        await transport<RagMatch[]>({
+          method: 'POST',
+          url: `/v1/workspaces/${ws}/agent/rag`,
+          body: input,
+          headers,
+        })
+      ).data,
   };
 };

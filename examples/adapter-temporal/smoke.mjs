@@ -8,12 +8,12 @@
 //   npx turbo run build
 //   node examples/adapter-temporal/smoke.mjs
 
-import { validateEventStream } from '@sharely/conformance';
+import { validateEventStream } from '@sharelyai/conformance';
 import {
   fromTemporal,
   createAgentEventSink,
   emitAgentEvent,
-} from '@sharely/adapter-temporal';
+} from '@sharelyai/adapter-temporal';
 
 // ---------- Fake Temporal client ----------
 // `start()` spins up a per-execution sink and returns a handle whose `query`
@@ -40,13 +40,28 @@ const fakeTemporalClient = scriptedEvents => ({
 const scriptedEvents = [
   { type: 'message_start', role: 'assistant', model: 'temporal-fake-smoke' },
   { type: 'content_delta', delta: 'Let me check. ' },
-  { type: 'tool_call_start', toolCallId: 'tc1', name: 'lookup', input: { q: 'x' } },
-  { type: 'tool_call_end', toolCallId: 'tc1', output: { answer: 42 }, durationMs: 5 },
+  {
+    type: 'tool_call_start',
+    toolCallId: 'tc1',
+    name: 'lookup',
+    input: { q: 'x' },
+  },
+  {
+    type: 'tool_call_end',
+    toolCallId: 'tc1',
+    output: { answer: 42 },
+    durationMs: 5,
+  },
   { type: 'content_delta', delta: 'Result: 42.' },
   {
     type: 'sources',
     sources: [
-      { id: 'src-1', type: 'knowledge', title: 'Doc', url: 'https://example.com/doc' },
+      {
+        id: 'src-1',
+        type: 'knowledge',
+        title: 'Doc',
+        url: 'https://example.com/doc',
+      },
     ],
   },
   { type: 'content_end' },
@@ -91,7 +106,8 @@ const input = {
 for await (const e of handler(input)) collected.push(e);
 
 console.log('Stream:');
-for (const e of collected) console.log(' ', e.type, JSON.stringify(e).slice(0, 100));
+for (const e of collected)
+  console.log(' ', e.type, JSON.stringify(e).slice(0, 100));
 
 // ---------- Assertions ----------
 
@@ -109,8 +125,7 @@ const expected = [
 ];
 
 const orderOk =
-  expected.length === types.length &&
-  expected.every((t, i) => types[i] === t);
+  expected.length === types.length && expected.every((t, i) => types[i] === t);
 
 const me = collected[collected.length - 1];
 const tokensOk =
@@ -126,8 +141,7 @@ const toolOk =
 
 const sourcesEvent = collected.find(e => e.type === 'sources');
 const sourcesOk =
-  sourcesEvent?.sources?.length === 1 &&
-  sourcesEvent.sources[0].id === 'src-1';
+  sourcesEvent?.sources?.length === 1 && sourcesEvent.sources[0].id === 'src-1';
 
 // Abort check: aborting partway should call cancel() on the workflow handle.
 let cancelled = false;
@@ -159,13 +173,36 @@ await it.next();
 const abortOk = cancelled;
 
 console.log('\n--- assertions ---');
-console.log('structural:        ', structural.ok ? 'PASS' : `FAIL: ${structural.errors.join('; ')}`);
-console.log('event order:       ', orderOk ? 'PASS' : `FAIL\n   expected: ${expected.join(', ')}\n   got:      ${types.join(', ')}`);
-console.log('tokens forwarded:  ', tokensOk ? 'PASS' : `FAIL (got ${me?.tokenUsage?.totalTokens})`);
-console.log('tool round-trip:   ', toolOk ? 'PASS' : `FAIL (start=${JSON.stringify(tcStart)}, end=${JSON.stringify(tcEnd)})`);
-console.log('sources batched:   ', sourcesOk ? 'PASS' : `FAIL (${JSON.stringify(sourcesEvent)})`);
-console.log('abort cancels:     ', abortOk ? 'PASS' : 'FAIL (workflow handle was not cancelled)');
+console.log(
+  'structural:        ',
+  structural.ok ? 'PASS' : `FAIL: ${structural.errors.join('; ')}`,
+);
+console.log(
+  'event order:       ',
+  orderOk
+    ? 'PASS'
+    : `FAIL\n   expected: ${expected.join(', ')}\n   got:      ${types.join(', ')}`,
+);
+console.log(
+  'tokens forwarded:  ',
+  tokensOk ? 'PASS' : `FAIL (got ${me?.tokenUsage?.totalTokens})`,
+);
+console.log(
+  'tool round-trip:   ',
+  toolOk
+    ? 'PASS'
+    : `FAIL (start=${JSON.stringify(tcStart)}, end=${JSON.stringify(tcEnd)})`,
+);
+console.log(
+  'sources batched:   ',
+  sourcesOk ? 'PASS' : `FAIL (${JSON.stringify(sourcesEvent)})`,
+);
+console.log(
+  'abort cancels:     ',
+  abortOk ? 'PASS' : 'FAIL (workflow handle was not cancelled)',
+);
 
-const allOk = structural.ok && orderOk && tokensOk && toolOk && sourcesOk && abortOk;
+const allOk =
+  structural.ok && orderOk && tokensOk && toolOk && sourcesOk && abortOk;
 console.log(allOk ? '\nall checks passed' : '\nSMOKE FAILED');
 process.exit(allOk ? 0 : 1);

@@ -1,4 +1,4 @@
-// Adapter-backed Pattern — `@sharely/adapter-temporal` turns a Temporal
+// Adapter-backed Pattern — `@sharelyai/adapter-temporal` turns a Temporal
 // workflow into a Sharely `Handler`. Each turn starts a workflow execution
 // and polls its event-buffer query until `message_end`. The workflow side
 // emits AgentEvents via createAgentEventSink + emitAgentEvent (see the
@@ -12,9 +12,9 @@
 // `TemporalClientLike` (start + cancel + query). server.ts wires a real
 // Temporal Client through wrapTemporalClient().
 
-import { fromTemporal } from '@sharely/adapter-temporal';
-import type { TemporalClientLike } from '@sharely/adapter-temporal';
-import type { Handler } from '@sharely/protocol';
+import { fromTemporal } from '@sharelyai/adapter-temporal';
+import type { TemporalClientLike } from '@sharelyai/adapter-temporal';
+import type { Handler } from '@sharelyai/protocol';
 
 export interface TemporalHandlerOptions {
   client: TemporalClientLike;
@@ -26,9 +26,7 @@ export interface TemporalHandlerOptions {
   pollIntervalMs?: number;
 }
 
-export const createTemporalHandler = (
-  opts: TemporalHandlerOptions,
-): Handler =>
+export const createTemporalHandler = (opts: TemporalHandlerOptions): Handler =>
   fromTemporal({
     client: opts.client,
     workflowType: opts.workflowType ?? 'sharelyAgentWorkflow',

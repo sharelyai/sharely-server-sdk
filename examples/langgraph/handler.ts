@@ -13,7 +13,7 @@ import type {
   AgentInput,
   Handler,
   Source,
-} from '@sharely/protocol';
+} from '@sharelyai/protocol';
 
 /**
  * Minimal structural shape we require — anything with a `streamEvents` method
@@ -151,7 +151,12 @@ const extractTextContent = (chunk: unknown): string => {
   if (typeof content === 'string') return content;
   if (Array.isArray(content)) {
     return content
-      .filter(c => c && typeof c === 'object' && (c as { type?: string }).type === 'text')
+      .filter(
+        c =>
+          c &&
+          typeof c === 'object' &&
+          (c as { type?: string }).type === 'text',
+      )
       .map(c => (c as { text?: string }).text ?? '')
       .join('');
   }
@@ -160,9 +165,11 @@ const extractTextContent = (chunk: unknown): string => {
 
 const extractUsage = (output: unknown): { input: number; output: number } => {
   if (!output || typeof output !== 'object') return { input: 0, output: 0 };
-  const meta = (output as {
-    usage_metadata?: { input_tokens?: number; output_tokens?: number };
-  }).usage_metadata;
+  const meta = (
+    output as {
+      usage_metadata?: { input_tokens?: number; output_tokens?: number };
+    }
+  ).usage_metadata;
   return {
     input: meta?.input_tokens ?? 0,
     output: meta?.output_tokens ?? 0,

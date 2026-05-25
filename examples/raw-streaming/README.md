@@ -4,11 +4,11 @@ The most minimal Pattern C: no framework, no factory, no wrapper. **A `Handler` 
 
 ## Files
 
-| File | Purpose |
-|---|---|
+| File                         | Purpose                                                                                                                                         |
+| ---------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
 | [`handler.ts`](./handler.ts) | The `rawHandler` itself — a multi-turn agent loop (model → tool → model → answer) showing every event type you'd typically emit. **Read this**. |
-| [`server.ts`](./server.ts) | Two lines: import the handler, pass it to `createSharelyServer`. |
-| [`smoke.mjs`](./smoke.mjs) | Runnable proof. JS port of the handler + 10 assertions (no fake client needed). |
+| [`server.ts`](./server.ts)   | Two lines: import the handler, pass it to `createSharelyServer`.                                                                                |
+| [`smoke.mjs`](./smoke.mjs)   | Runnable proof. JS port of the handler + 10 assertions (no fake client needed).                                                                 |
 
 `handler.ts` is the customer-form code. `smoke.mjs` inlines the same logic in JS so the example runs without a TypeScript build — if you change one, mirror it in the other.
 
@@ -31,7 +31,7 @@ Reach for raw when:
 - You've built a **hand-rolled multi-step agent** (your own loop, your own tool routing) and don't want a framework abstraction in the way.
 - You want the **absolute minimum** to satisfy the Handler contract — useful as a learning baseline.
 
-If you're using an off-the-shelf framework, reach for the matching example ([anthropic-sdk-direct](../anthropic-sdk-direct/), [openai-agents-sdk](../openai-agents-sdk/), [langgraph](../langgraph/)) or [`@sharely/adapter-vercel-ai`](../../packages/adapter-vercel-ai/) first.
+If you're using an off-the-shelf framework, reach for the matching example ([anthropic-sdk-direct](../anthropic-sdk-direct/), [openai-agents-sdk](../openai-agents-sdk/), [langgraph](../langgraph/)) or [`@sharelyai/adapter-vercel-ai`](../../packages/adapter-vercel-ai/) first.
 
 ## The Handler contract
 
@@ -39,7 +39,7 @@ If you're using an off-the-shelf framework, reach for the matching example ([ant
 type Handler = (input: AgentInput) => AsyncIterable<AgentEvent>;
 ```
 
-`input` carries `message`, `history`, `context` (workspaceId, threadId, api client, trace), and a `signal: AbortSignal`. You yield discriminated `AgentEvent` objects; `@sharely/server` handles SSE framing, the `threadId` / `messageId` envelope, persistence to `agentMessage`, and the trailing `done` event.
+`input` carries `message`, `history`, `context` (workspaceId, threadId, api client, trace), and a `signal: AbortSignal`. You yield discriminated `AgentEvent` objects; `@sharelyai/server` handles SSE framing, the `threadId` / `messageId` envelope, persistence to `agentMessage`, and the trailing `done` event.
 
 ## What this example demonstrates
 

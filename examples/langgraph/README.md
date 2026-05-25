@@ -4,11 +4,11 @@ A raw Sharely `Handler` driving a [LangGraph](https://langchain-ai.github.io/lan
 
 ## Files
 
-| File | Purpose |
-|---|---|
-| [`handler.ts`](./handler.ts) | `createLangGraphHandler({ graph, model, buildInput })`. The event mapping. **Read this**. |
-| [`server.ts`](./server.ts) | Builds a `createReactAgent` graph (Anthropic model + one `lookup` tool) and wires it into `createSharelyServer`. |
-| [`smoke.mjs`](./smoke.mjs) | Runnable proof. JS port of the handler + a fake graph + assertions. No API key needed. |
+| File                         | Purpose                                                                                                          |
+| ---------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| [`handler.ts`](./handler.ts) | `createLangGraphHandler({ graph, model, buildInput })`. The event mapping. **Read this**.                        |
+| [`server.ts`](./server.ts)   | Builds a `createReactAgent` graph (Anthropic model + one `lookup` tool) and wires it into `createSharelyServer`. |
+| [`smoke.mjs`](./smoke.mjs)   | Runnable proof. JS port of the handler + a fake graph + assertions. No API key needed.                           |
 
 `handler.ts` is the customer-form code. `smoke.mjs` inlines the same logic in JS so the example runs without TypeScript or LangChain deps — if you change one, mirror it in the other.
 
@@ -26,7 +26,7 @@ Expected: `all checks passed`.
 
 Reach for this when you want LangGraph's **graph composition** — multi-node agents, conditional edges, checkpointing, human-in-the-loop, the `createReactAgent` prebuilt — but still want to surface the result as a Sharely-compatible server.
 
-If you only need a simple text-streaming chat (no graph nodes, no tools), the [`@sharely/adapter-vercel-ai`](../../packages/adapter-vercel-ai/) is lighter weight.
+If you only need a simple text-streaming chat (no graph nodes, no tools), the [`@sharelyai/adapter-vercel-ai`](../../packages/adapter-vercel-ai/) is lighter weight.
 
 ## What the handler does
 
@@ -54,7 +54,9 @@ The reference [`lookup`](./server.ts) tool does this. The `sources` field is als
 By default the handler builds:
 
 ```ts
-{ messages: [...history, { role: 'user', content: message }] }
+{
+  messages: [...history, { role: 'user', content: message }];
+}
 ```
 
 which is what `createReactAgent` (and most LangGraph chat-style graphs) expects. If your graph takes a different shape, pass a `buildInput`:
@@ -72,4 +74,4 @@ createLangGraphHandler({
 
 **Reasoning chunks.** If your chat model emits reasoning (e.g. Claude extended thinking), the `chunk.content` array will include `{ type: 'thinking' }` blocks. `extractTextContent` skips those — add a branch if you want to surface them as Sharely `thinking_*` events.
 
-**Multi-turn checkpointing.** LangGraph supports persisting state across turns via `checkpointer`. The handler doesn't manage that — `@sharely/server` is the persistence layer (it stores message history in `agentMessage`), and the handler is invoked per-turn with that history. If you also want LangGraph's per-graph state to persist, configure a checkpointer on the graph itself with `thread_id: input.context.threadId`.
+**Multi-turn checkpointing.** LangGraph supports persisting state across turns via `checkpointer`. The handler doesn't manage that — `@sharelyai/server` is the persistence layer (it stores message history in `agentMessage`), and the handler is invoked per-turn with that history. If you also want LangGraph's per-graph state to persist, configure a checkpointer on the graph itself with `thread_id: input.context.threadId`.

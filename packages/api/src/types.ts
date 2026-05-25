@@ -1,6 +1,9 @@
 import type {
-  Source, ThinkingStep, TokenUsage, ToolCallRecord
-} from "@sharely/protocol";
+  Source,
+  ThinkingStep,
+  TokenUsage,
+  ToolCallRecord,
+} from '@sharelyai/protocol';
 
 export interface CreateThreadInput {
   title: string;
@@ -37,7 +40,7 @@ export interface AgentThreadWithMessages extends AgentThread {
 export interface StoredAgentMessage {
   id: string;
   threadId?: string;
-  role: "user" | "assistant" | "system";
+  role: 'user' | 'assistant' | 'system';
   content: string | null;
   thinkingSteps?: ThinkingStep[];
   toolCalls?: ToolCallRecord[];
@@ -56,7 +59,7 @@ export interface ThreadListResponse {
 }
 
 export interface StoreMessageInput {
-  role: "user" | "assistant";
+  role: 'user' | 'assistant';
   content: string | null;
   thinkingSteps?: ThinkingStep[];
   toolCalls?: ToolCallRecord[];

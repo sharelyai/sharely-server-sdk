@@ -1,4 +1,4 @@
-import type { AgentEvent, AgentInput } from "@sharely/protocol";
+import type { AgentEvent, AgentInput } from '@sharelyai/protocol';
 
 /** A page of buffered events returned by the workflow's query handler. */
 export interface AgentEventPage {
@@ -26,7 +26,7 @@ export interface TemporalWorkflowHandle {
 export interface TemporalClientLike {
   start(
     workflowType: string,
-    options: { taskQueue: string; workflowId: string; args?: unknown[] }
+    options: { taskQueue: string; workflowId: string; args?: unknown[] },
   ): Promise<TemporalWorkflowHandle>;
 }
 

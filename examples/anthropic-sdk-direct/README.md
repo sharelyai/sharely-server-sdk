@@ -4,11 +4,11 @@ A raw Sharely `Handler` driving `@anthropic-ai/sdk` directly: streams text and t
 
 ## Files
 
-| File | Purpose |
-|---|---|
-| [`handler.ts`](./handler.ts) | `createAnthropicHandler({ client, model, tools, ... })`. The protocol mapping — **read this**. |
-| [`server.ts`](./server.ts) | Wires the handler into `createSharelyServer`. Drop-in shape for a customer server. |
-| [`smoke.mjs`](./smoke.mjs) | Runnable proof. JS port of the handler + a fake Anthropic client + assertions. No API key needed. |
+| File                         | Purpose                                                                                           |
+| ---------------------------- | ------------------------------------------------------------------------------------------------- |
+| [`handler.ts`](./handler.ts) | `createAnthropicHandler({ client, model, tools, ... })`. The protocol mapping — **read this**.    |
+| [`server.ts`](./server.ts)   | Wires the handler into `createSharelyServer`. Drop-in shape for a customer server.                |
+| [`smoke.mjs`](./smoke.mjs)   | Runnable proof. JS port of the handler + a fake Anthropic client + assertions. No API key needed. |
 
 `handler.ts` is the customer-form code. `smoke.mjs` inlines the same logic in JS so this example runs without TypeScript or external deps — if you change one, mirror it in the other.
 
@@ -26,7 +26,7 @@ Expected: `all checks passed`.
 
 Reach for Pattern C when you want **direct control over the Anthropic loop** — custom retry, custom stop conditions, prompt caching tuned to your prompt shape, or you already have an Anthropic-based agent and want to surface it as a Sharely server.
 
-If you don't need that control, prefer [`@sharely/adapter-vercel-ai`](../../packages/adapter-vercel-ai/) — same wire output via `streamText`, less plumbing.
+If you don't need that control, prefer [`@sharelyai/adapter-vercel-ai`](../../packages/adapter-vercel-ai/) — same wire output via `streamText`, less plumbing.
 
 ## What the handler does
 
@@ -47,15 +47,19 @@ If you don't need that control, prefer [`@sharely/adapter-vercel-ai`](../../pack
 Tool executors return the Sharely [`ToolResult`](../../packages/protocol/src/tools.ts) shape: `{ output?, error?, sources? }`. `output` is JSON-serialized back to Anthropic (so Claude sees what the tool found); `sources` is collected across every tool call in every iteration and emitted as **one batched `sources` event** just before `content_end`. This matches Sharely's hosted [`runAgentLoop`](../../README.md#5-changes-already-made-in-sharelyai-be-cross-repo) — sources are plural, batched, and ordered last so the UI can render citations alongside the final answer.
 
 ```ts
-tools: [{
-  name: "lookup",
-  description: "...",
-  input_schema: { /* ... */ },
-  execute: async ({ q }) => ({
-    output: { answer: 42 },
-    sources: [{ id: "src-1", type: "knowledge", title: "Doc", url: "..." }]
-  })
-}]
+tools: [
+  {
+    name: 'lookup',
+    description: '...',
+    input_schema: {
+      /* ... */
+    },
+    execute: async ({ q }) => ({
+      output: { answer: 42 },
+      sources: [{ id: 'src-1', type: 'knowledge', title: 'Doc', url: '...' }],
+    }),
+  },
+];
 ```
 
 ## Tool input streaming
@@ -71,6 +75,6 @@ content_delta  "Looking now..."
 tool_call_end                          ← after stream ends + tool executes
 ```
 
-Tool **execution** still happens after the stream ends (atomic, no race with subsequent stream events). The protocol has no streamed-partial-input event, so the input lands once on `tool_call_start` rather than typing-in character by character — but the *start* event itself lands as early as the protocol allows.
+Tool **execution** still happens after the stream ends (atomic, no race with subsequent stream events). The protocol has no streamed-partial-input event, so the input lands once on `tool_call_start` rather than typing-in character by character — but the _start_ event itself lands as early as the protocol allows.
 
 If a future protocol revision adds a `tool_call_input_delta` event, swap the per-block buffer for a yield-per-chunk in `content_block_delta`.

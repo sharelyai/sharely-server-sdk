@@ -1,6 +1,6 @@
-import type { Source } from "@sharely/protocol";
-import type { SharelyAPIClient } from "@sharely/api";
-import type { ExecutorRegistry } from "./index.js";
+import type { Source } from '@sharelyai/protocol';
+import type { SharelyAPIClient } from '@sharelyai/api';
+import type { ExecutorRegistry } from './index.js';
 
 interface RagMatchLike {
   id: string;
@@ -11,23 +11,23 @@ interface RagMatchLike {
 const ragMatchToSource = (m: RagMatchLike): Source => {
   const meta = m.metadata ?? {};
   const title =
-    typeof meta["title"] === "string"
-      ? (meta["title"] as string)
-      : typeof meta["source"] === "string"
-        ? (meta["source"] as string)
-        : "Result";
+    typeof meta['title'] === 'string'
+      ? (meta['title'] as string)
+      : typeof meta['source'] === 'string'
+        ? (meta['source'] as string)
+        : 'Result';
   const url =
-    typeof meta["url"] === "string"
-      ? (meta["url"] as string)
-      : typeof meta["sourceUrl"] === "string"
-        ? (meta["sourceUrl"] as string)
+    typeof meta['url'] === 'string'
+      ? (meta['url'] as string)
+      : typeof meta['sourceUrl'] === 'string'
+        ? (meta['sourceUrl'] as string)
         : undefined;
   return {
     id: m.id,
-    type: "semantic",
+    type: 'semantic',
     title,
     ...(url ? { url } : {}),
-    metadata: { score: m.score, ...meta }
+    metadata: { score: m.score, ...meta },
   };
 };
 
@@ -35,7 +35,7 @@ const ragMatchToSource = (m: RagMatchLike): Source => {
  * Platform-backed executors for the Sharely tools that have a Backplane
  * endpoint **today**. Pass the result to `createTools(...)`.
  *
- * Shipped: `semantic_search` — backed by `@sharely/api`'s `rag()` (embedding +
+ * Shipped: `semantic_search` — backed by `@sharelyai/api`'s `rag()` (embedding +
  * vector retrieval against the workspace knowledge base).
  *
  * NOT shipped, intentionally: `search_knowledge` (keyword/ILIKE search) and the
@@ -45,22 +45,22 @@ const ragMatchToSource = (m: RagMatchLike): Source => {
  * yourself via `createTools({ search_knowledge: yourExecutor, ... })`.
  */
 export const createPlatformExecutors = (
-  api: SharelyAPIClient
+  api: SharelyAPIClient,
 ): ExecutorRegistry => ({
   semantic_search: async input => {
-    const text = typeof input["text"] === "string" ? input["text"].trim() : "";
+    const text = typeof input['text'] === 'string' ? input['text'].trim() : '';
     if (!text) return { error: "semantic_search requires a non-empty 'text'" };
 
-    const topK = typeof input["topK"] === "number" ? input["topK"] : undefined;
+    const topK = typeof input['topK'] === 'number' ? input['topK'] : undefined;
     const languageId =
-      typeof input["languageId"] === "string"
-        ? (input["languageId"] as string)
+      typeof input['languageId'] === 'string'
+        ? (input['languageId'] as string)
         : undefined;
 
     const matches = await api.rag({
       text,
       ...(topK !== undefined ? { topK } : {}),
-      ...(languageId !== undefined ? { languageId } : {})
+      ...(languageId !== undefined ? { languageId } : {}),
     });
 
     return {
@@ -69,10 +69,10 @@ export const createPlatformExecutors = (
         results: matches.map(m => ({
           id: m.id,
           score: m.score,
-          ...(m.metadata ?? {})
-        }))
+          ...(m.metadata ?? {}),
+        })),
       },
-      sources: matches.map(ragMatchToSource)
+      sources: matches.map(ragMatchToSource),
     };
-  }
+  },
 });

@@ -8,8 +8,8 @@
 //   npx turbo run build
 //   node examples/adapter-vercel-ai/smoke.mjs
 
-import { validateEventStream } from '@sharely/conformance';
-import { fromVercelAI } from '@sharely/adapter-vercel-ai';
+import { validateEventStream } from '@sharelyai/conformance';
+import { fromVercelAI } from '@sharelyai/adapter-vercel-ai';
 
 // ---------- Fake `streamText` result ----------
 // Per the structural shape adapter-vercel-ai consumes — just an object with
@@ -78,7 +78,8 @@ const input = {
 for await (const e of handler(input)) collected.push(e);
 
 console.log('Stream:');
-for (const e of collected) console.log(' ', e.type, JSON.stringify(e).slice(0, 100));
+for (const e of collected)
+  console.log(' ', e.type, JSON.stringify(e).slice(0, 100));
 
 // ---------- Assertions ----------
 
@@ -86,18 +87,17 @@ const structural = validateEventStream(collected);
 const types = collected.map(e => e.type);
 const expected = [
   'message_start',
-  'content_delta',     // "Let me check. "
-  'tool_call_start',   // semantic_search
+  'content_delta', // "Let me check. "
+  'tool_call_start', // semantic_search
   'tool_call_end',
-  'content_delta',     // "Found one match."
-  'sources',           // from the `source` part
+  'content_delta', // "Found one match."
+  'sources', // from the `source` part
   'content_end',
   'message_end',
 ];
 
 const orderOk =
-  expected.length === types.length &&
-  expected.every((t, i) => types[i] === t);
+  expected.length === types.length && expected.every((t, i) => types[i] === t);
 
 const me = collected[collected.length - 1];
 const tokensOk =
@@ -128,13 +128,38 @@ const streamingOk =
   after.delta === 'Found one match.';
 
 console.log('\n--- assertions ---');
-console.log('structural:        ', structural.ok ? 'PASS' : `FAIL: ${structural.errors.join('; ')}`);
-console.log('event order:       ', orderOk ? 'PASS' : `FAIL\n   expected: ${expected.join(', ')}\n   got:      ${types.join(', ')}`);
-console.log('tokens forwarded:  ', tokensOk ? 'PASS' : `FAIL (got ${me?.tokenUsage?.totalTokens})`);
-console.log('tool round-trip:   ', toolOk ? 'PASS' : `FAIL (start=${JSON.stringify(tcStart)}, end=${JSON.stringify(tcEnd)})`);
-console.log('sources batched:   ', sourcesOk ? 'PASS' : `FAIL (${JSON.stringify(sourcesEvent)})`);
-console.log('streamed mid-run:  ', streamingOk ? 'PASS' : `FAIL (before=${JSON.stringify(before)}, after=${JSON.stringify(after)})`);
+console.log(
+  'structural:        ',
+  structural.ok ? 'PASS' : `FAIL: ${structural.errors.join('; ')}`,
+);
+console.log(
+  'event order:       ',
+  orderOk
+    ? 'PASS'
+    : `FAIL\n   expected: ${expected.join(', ')}\n   got:      ${types.join(', ')}`,
+);
+console.log(
+  'tokens forwarded:  ',
+  tokensOk ? 'PASS' : `FAIL (got ${me?.tokenUsage?.totalTokens})`,
+);
+console.log(
+  'tool round-trip:   ',
+  toolOk
+    ? 'PASS'
+    : `FAIL (start=${JSON.stringify(tcStart)}, end=${JSON.stringify(tcEnd)})`,
+);
+console.log(
+  'sources batched:   ',
+  sourcesOk ? 'PASS' : `FAIL (${JSON.stringify(sourcesEvent)})`,
+);
+console.log(
+  'streamed mid-run:  ',
+  streamingOk
+    ? 'PASS'
+    : `FAIL (before=${JSON.stringify(before)}, after=${JSON.stringify(after)})`,
+);
 
-const allOk = structural.ok && orderOk && tokensOk && toolOk && sourcesOk && streamingOk;
+const allOk =
+  structural.ok && orderOk && tokensOk && toolOk && sourcesOk && streamingOk;
 console.log(allOk ? '\nall checks passed' : '\nSMOKE FAILED');
 process.exit(allOk ? 0 : 1);

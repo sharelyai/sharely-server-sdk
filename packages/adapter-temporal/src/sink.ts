@@ -1,8 +1,8 @@
-import type { AgentEvent } from "@sharely/protocol";
-import type { AgentEventPage } from "./types.js";
+import type { AgentEvent } from '@sharelyai/protocol';
+import type { AgentEventPage } from './types.js';
 
 /** Query name the client polls and the workflow must register a handler for. */
-export const AGENT_EVENTS_QUERY = "sharely_agentEvents";
+export const AGENT_EVENTS_QUERY = 'sharely_agentEvents';
 
 export interface AgentEventSink {
   /** Append an event to the buffer (call as the agent produces output). */
@@ -31,7 +31,7 @@ export const createAgentEventSink = (): AgentEventSink => {
   return {
     emit(event) {
       buffer.push(event);
-      if (event.type === "message_end" || event.type === "error") done = true;
+      if (event.type === 'message_end' || event.type === 'error') done = true;
     },
     query(cursor) {
       const from = Math.max(0, cursor);
@@ -39,11 +39,14 @@ export const createAgentEventSink = (): AgentEventSink => {
     },
     complete() {
       done = true;
-    }
+    },
   };
 };
 
 /** Emits an event into a sink. Thin helper for symmetry with the client API. */
-export const emitAgentEvent = (sink: AgentEventSink, event: AgentEvent): void => {
+export const emitAgentEvent = (
+  sink: AgentEventSink,
+  event: AgentEvent,
+): void => {
   sink.emit(event);
 };

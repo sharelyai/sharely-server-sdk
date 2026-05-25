@@ -7,7 +7,7 @@
 //   npx turbo run build --filter=@sharely/conformance
 //   node examples/openai-agents-sdk/smoke.mjs
 
-import { validateEventStream } from '@sharely/conformance';
+import { validateEventStream } from '@sharelyai/conformance';
 
 // ---------- JS port of createOpenAIAgentsHandler (handler.ts) ----------
 
@@ -36,7 +36,11 @@ const pickToolInput = item => {
   for (const c of candidates) {
     if (c == null) continue;
     if (typeof c === 'string') {
-      try { return JSON.parse(c); } catch { /* try next */ }
+      try {
+        return JSON.parse(c);
+      } catch {
+        /* try next */
+      }
     } else if (typeof c === 'object') {
       return c;
     }
@@ -75,7 +79,11 @@ const createOpenAIAgentsHandler = ({ agent, model, maxTurns, run }) => {
     }
 
     const onAbort = () => {
-      try { stream.abort?.(); } catch { /* noop */ }
+      try {
+        stream.abort?.();
+      } catch {
+        /* noop */
+      }
     };
     if (input.signal.aborted) onAbort();
     else input.signal.addEventListener('abort', onAbort, { once: true });
@@ -91,7 +99,10 @@ const createOpenAIAgentsHandler = ({ agent, model, maxTurns, run }) => {
 
         if (event.type === 'raw_model_stream_event') {
           const d = event.data ?? {};
-          if (d.type === 'response.output_text.delta' && typeof d.delta === 'string') {
+          if (
+            d.type === 'response.output_text.delta' &&
+            typeof d.delta === 'string'
+          ) {
             yield { type: 'content_delta', delta: d.delta };
           } else if (d.type === 'response.completed') {
             inputTokens += d.response?.usage?.input_tokens ?? 0;
@@ -154,7 +165,9 @@ const createOpenAIAgentsHandler = ({ agent, model, maxTurns, run }) => {
 const fakeRun = events => {
   let aborted = false;
   return async () => ({
-    abort: () => { aborted = true; },
+    abort: () => {
+      aborted = true;
+    },
     async *[Symbol.asyncIterator]() {
       for (const ev of events) {
         if (aborted) return;
@@ -169,13 +182,19 @@ const fakeRun = events => {
 //  so all events come from one stream rather than two streams like Anthropic.)
 
 const events = [
-  { type: 'raw_model_stream_event', data: { type: 'response.output_text.delta', delta: 'Let me check. ' } },
+  {
+    type: 'raw_model_stream_event',
+    data: { type: 'response.output_text.delta', delta: 'Let me check. ' },
+  },
   {
     type: 'run_item_stream_event',
     name: 'tool_called',
     item: { name: 'lookup', callId: 'tc1', arguments: '{"q":"x"}' },
   },
-  { type: 'raw_model_stream_event', data: { type: 'response.output_text.delta', delta: 'Looking now...' } },
+  {
+    type: 'raw_model_stream_event',
+    data: { type: 'response.output_text.delta', delta: 'Looking now...' },
+  },
   {
     type: 'run_item_stream_event',
     name: 'tool_output',
@@ -185,14 +204,19 @@ const events = [
         answer: 42,
         sources: [
           {
-            id: 'src-1', type: 'knowledge',
-            title: 'Reference doc', url: 'https://example.com/doc',
+            id: 'src-1',
+            type: 'knowledge',
+            title: 'Reference doc',
+            url: 'https://example.com/doc',
           },
         ],
       },
     },
   },
-  { type: 'raw_model_stream_event', data: { type: 'response.output_text.delta', delta: 'Result: 42.' } },
+  {
+    type: 'raw_model_stream_event',
+    data: { type: 'response.output_text.delta', delta: 'Result: 42.' },
+  },
   {
     type: 'raw_model_stream_event',
     data: {
@@ -215,9 +239,19 @@ const input = {
   message: "what's the answer?",
   history: [],
   context: {
-    workspaceId: 'ws', threadId: 't', authorization: 'Bearer x',
+    workspaceId: 'ws',
+    threadId: 't',
+    authorization: 'Bearer x',
     api: { baseUrl: 'x', workspaceId: 'ws' },
-    trace: { traceId: 'tr', messageId: 'm', event() {}, child() { return this; }, end() {} },
+    trace: {
+      traceId: 'tr',
+      messageId: 'm',
+      event() {},
+      child() {
+        return this;
+      },
+      end() {},
+    },
   },
   signal: new AbortController().signal,
 };
@@ -225,7 +259,8 @@ const input = {
 for await (const e of handler(input)) collected.push(e);
 
 console.log('Stream:');
-for (const e of collected) console.log(' ', e.type, JSON.stringify(e).slice(0, 100));
+for (const e of collected)
+  console.log(' ', e.type, JSON.stringify(e).slice(0, 100));
 
 // ---------- Assertions ----------
 
@@ -233,25 +268,23 @@ const structural = validateEventStream(collected);
 const types = collected.map(e => e.type);
 const expected = [
   'message_start',
-  'content_delta',   // "Let me check. "
+  'content_delta', // "Let me check. "
   'tool_call_start', // lookup(q=x) — SDK-side, we just relay it
-  'content_delta',   // "Looking now..."
-  'tool_call_end',   // SDK ran the tool; output includes sources
-  'content_delta',   // "Result: 42."
-  'sources',         // accumulated from tool_output.output.sources
+  'content_delta', // "Looking now..."
+  'tool_call_end', // SDK ran the tool; output includes sources
+  'content_delta', // "Result: 42."
+  'sources', // accumulated from tool_output.output.sources
   'content_end',
   'message_end',
 ];
 
 const orderOk =
-  expected.length === types.length &&
-  expected.every((t, i) => types[i] === t);
+  expected.length === types.length && expected.every((t, i) => types[i] === t);
 
 const me = collected[collected.length - 1];
 const expectedTotal = 30 + 12;
 const tokensOk =
-  me?.type === 'message_end' &&
-  me.tokenUsage?.totalTokens === expectedTotal;
+  me?.type === 'message_end' && me.tokenUsage?.totalTokens === expectedTotal;
 
 const tcStart = collected.find(e => e.type === 'tool_call_start');
 const tcEnd = collected.find(e => e.type === 'tool_call_end');
@@ -274,17 +307,46 @@ const startIdx = collected.findIndex(e => e.type === 'tool_call_start');
 const before = collected[startIdx - 1];
 const after = collected[startIdx + 1];
 const streamingOk =
-  before?.type === 'content_delta' && before.delta === 'Let me check. ' &&
-  after?.type === 'content_delta' && after.delta === 'Looking now...';
+  before?.type === 'content_delta' &&
+  before.delta === 'Let me check. ' &&
+  after?.type === 'content_delta' &&
+  after.delta === 'Looking now...';
 
 console.log('\n--- assertions ---');
-console.log('structural:        ', structural.ok ? 'PASS' : `FAIL: ${structural.errors.join('; ')}`);
-console.log('event order:       ', orderOk ? 'PASS' : `FAIL\n   expected: ${expected.join(', ')}\n   got:      ${types.join(', ')}`);
-console.log('token aggregation: ', tokensOk ? 'PASS' : `FAIL (got ${me?.tokenUsage?.totalTokens}, expected ${expectedTotal})`);
-console.log('tool relay:        ', toolOk ? 'PASS' : `FAIL (start=${JSON.stringify(tcStart)}, end=${JSON.stringify(tcEnd)})`);
-console.log('sources batched:   ', sourcesOk ? 'PASS' : `FAIL (${JSON.stringify(sourcesEvent)})`);
-console.log('streamed mid-run:  ', streamingOk ? 'PASS' : `FAIL (before=${JSON.stringify(before)}, after=${JSON.stringify(after)})`);
+console.log(
+  'structural:        ',
+  structural.ok ? 'PASS' : `FAIL: ${structural.errors.join('; ')}`,
+);
+console.log(
+  'event order:       ',
+  orderOk
+    ? 'PASS'
+    : `FAIL\n   expected: ${expected.join(', ')}\n   got:      ${types.join(', ')}`,
+);
+console.log(
+  'token aggregation: ',
+  tokensOk
+    ? 'PASS'
+    : `FAIL (got ${me?.tokenUsage?.totalTokens}, expected ${expectedTotal})`,
+);
+console.log(
+  'tool relay:        ',
+  toolOk
+    ? 'PASS'
+    : `FAIL (start=${JSON.stringify(tcStart)}, end=${JSON.stringify(tcEnd)})`,
+);
+console.log(
+  'sources batched:   ',
+  sourcesOk ? 'PASS' : `FAIL (${JSON.stringify(sourcesEvent)})`,
+);
+console.log(
+  'streamed mid-run:  ',
+  streamingOk
+    ? 'PASS'
+    : `FAIL (before=${JSON.stringify(before)}, after=${JSON.stringify(after)})`,
+);
 
-const allOk = structural.ok && orderOk && tokensOk && toolOk && sourcesOk && streamingOk;
+const allOk =
+  structural.ok && orderOk && tokensOk && toolOk && sourcesOk && streamingOk;
 console.log(allOk ? '\nall checks passed' : '\nSMOKE FAILED');
 process.exit(allOk ? 0 : 1);

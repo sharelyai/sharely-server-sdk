@@ -11,7 +11,7 @@
 // independently — see the README for that snippet.
 
 import { Connection, Client } from '@temporalio/client';
-import { createSharelyServer } from '@sharely/server';
+import { createSharelyServer } from '@sharelyai/server';
 import { createTemporalHandler, wrapTemporalClient } from './handler.js';
 
 const main = async () => {
