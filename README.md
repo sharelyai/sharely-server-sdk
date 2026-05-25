@@ -77,8 +77,8 @@ WebControl ──▶ sharelyai-be  POST /workspaces/:wsId/agent/threads/:threadI
 ### Auth model
 - The customer's `@sharely/server` is configured with a **`workspaceApiKey`**.
 - Incoming requests carry a **user JWT** in `Authorization`. The server **validates** it via `POST /v1/workspaces/:wsId/api-authenticated` (caller-auth = `workspaceApiKey`, body = `{ token: <user JWT> }`), deriving `userId`/`temporalUserId`/`roleId`.
-- All platform calls (Backplane persistence, RAG, validation) use `workspaceApiKey` — never the user JWT.
-- RBAC and token minting stay in `sharelyai-be`; the SDK only validates + forwards.
+- **Two-key split for platform calls:** `workspaceApiKey` is used **only** for that one validation call (`/api-authenticated` requires admin-class auth because it validates someone else's token). Every other Backplane call — persistence (`threads.get`, `threads.messages.create`), RAG, and the `AgentContext.api` exposed to the `Handler` — uses the **incoming user JWT** so the platform's RBAC checks (`getTokenRoleId` against `agentThread.roleId`) operate against the real user.
+- RBAC and token minting stay in `sharelyai-be`; the SDK never mints tokens.
 
 ---
 
@@ -93,7 +93,7 @@ The customer-hosted path required backend work. All committed and typecheck-clea
 - **`src/utils/schemas.ts`** — `AGENT_BACKPLANE_AGENT_SERVER_CREATE` / `_UPDATE` yup schemas.
 - **`src/index.ts`** — 5 routes under `/v1/workspaces/:workspaceId/agent/servers`, guarded by `isApiKeyAuthenticated`.
 
-**⚠️ The Prisma migration was NOT applied** — only `prisma generate` was run (repo-owner instruction). Before the dispatch path works against any real DB: `cd ../sharelyai-be && npx prisma migrate dev --name add_agent_server`.
+**Prisma migration applied** — the `AgentServer` table exists in the dev DB; the dispatch path can now run against real data.
 
 ---
 
@@ -137,8 +137,7 @@ The customer-hosted path required backend work. All committed and typecheck-clea
 ## 8. Blockers / pending (need repo-owner action)
 
 1. **npm publish.** `@sharely/*` is an unclaimed scope. The owner is logged in (`andresmontoya`) but asked to publish manually. Publish order: `@sharely/protocol` first (others depend on it), then `tools`, `api`, `server`, adapters. `@sharely/conformance` is private — do not publish.
-2. **Prisma migration** in `sharelyai-be` — see §5.
-3. **Drift prevention** (TASK.md §13 DoD) — once `@sharely/protocol` + `@sharely/tools` are published, rewrite `sharelyai-be/src/controller/agent/types.ts` and `tools/*` to re-export from the published packages instead of duplicating. ~10-line change; blocked on publish.
+2. **Drift prevention** (TASK.md §13 DoD) — once `@sharely/protocol` + `@sharely/tools` are published, rewrite `sharelyai-be/src/controller/agent/types.ts` and `tools/*` to re-export from the published packages instead of duplicating. ~10-line change; blocked on publish.
 
 ---
 

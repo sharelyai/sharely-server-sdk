@@ -84,17 +84,19 @@ export const createSharelyServer = (opts: CreateSharelyServerOptions): Express =
     if (!authorization) return fail(res, 401, "Authentication Error", "Authorization header is required");
     if (isInvalidBearer(authorization)) return fail(res, 401, "Authentication Error", "Invalid bearer token");
 
-    const api = createSharelyAPIClient({
-      baseUrl: opts.apiUrl, workspaceId: opts.workspaceId, authorization: platformAuth
-    });
-
     let userId: string | undefined;
     let temporalUserId: string | undefined;
     let roleId: string | undefined;
     if (validateIncoming) {
+      // /v1/workspaces/:wsId/api-authenticated requires admin-class auth
+      // (workspaceApiKey) because it validates someone else's token. This
+      // validator client is used ONLY for that one call.
+      const validatorApi = createSharelyAPIClient({
+        baseUrl: opts.apiUrl, workspaceId: opts.workspaceId, authorization: platformAuth
+      });
       const token = authorization.replace(/^Bearer\s+/i, "").trim();
       try {
-        const result = await api.tokens.validate(token);
+        const result = await validatorApi.tokens.validate(token);
         if (!result || (!result.id && !result.temporalUserId)) {
           return fail(res, 401, "Authentication Error", "Token rejected by platform");
         }
@@ -108,6 +110,15 @@ export const createSharelyServer = (opts: CreateSharelyServerOptions): Express =
           "Authentication Error", "Token rejected by platform");
       }
     }
+
+    // Backplane persistence / RAG / AgentContext.api use the incoming user
+    // token so the platform's RBAC checks (`getTokenRoleId` against
+    // `agentThread.roleId`) operate against the real user — not the workspace
+    // admin key. workspaceApiKey is reserved for `tokens.validate` above.
+    const api = createSharelyAPIClient({
+      baseUrl: opts.apiUrl, workspaceId: opts.workspaceId, authorization,
+      ...(roleId !== undefined && { roleId })
+    });
 
     const context = buildAgentContext({
       workspaceId: opts.workspaceId, threadId, authorization,

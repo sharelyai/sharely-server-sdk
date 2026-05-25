@@ -17,10 +17,13 @@ const WORKSPACE_API_KEY = "wsk_test_key";
 // ---------- mock Backplane ----------
 const storedMessages = [];
 let validateCalls = 0;
+const validateAuths = [];
+const persistenceAuths = [];
 const mock = express();
 mock.use(express.json());
 mock.post(`/v1/workspaces/${WS_ID}/api-authenticated`, (req, res) => {
   validateCalls++;
+  validateAuths.push(req.headers.authorization);
   const { token } = req.body ?? {};
   if (!token || token === "bad") return res.status(200).json({});
   res.json({
@@ -28,10 +31,12 @@ mock.post(`/v1/workspaces/${WS_ID}/api-authenticated`, (req, res) => {
     user_metadata: { roleId: "role-smoke" }
   });
 });
-mock.get(`/v1/workspaces/${WS_ID}/agent/threads/${THREAD_ID}`, (_req, res) => {
+mock.get(`/v1/workspaces/${WS_ID}/agent/threads/${THREAD_ID}`, (req, res) => {
+  persistenceAuths.push(req.headers.authorization);
   res.json({ id: THREAD_ID, messages: storedMessages });
 });
 mock.post(`/v1/workspaces/${WS_ID}/agent/threads/${THREAD_ID}/messages`, (req, res) => {
+  persistenceAuths.push(req.headers.authorization);
   const id = `msg-${storedMessages.length + 1}`;
   storedMessages.push({ id, ...req.body });
   res.json({ id });
@@ -126,6 +131,15 @@ const assistantPersisted = storedMessages.some(
     && m.model === "smoke-model-v1"
 );
 
+// Auth split: /api-authenticated must see the workspaceApiKey (admin),
+// Backplane persistence must see the incoming user JWT (so RBAC works).
+const validatorAuthOk =
+  validateAuths.length === 1 &&
+  validateAuths[0] === `Bearer ${WORKSPACE_API_KEY}`;
+const persistenceAuthOk =
+  persistenceAuths.length >= 1 &&
+  persistenceAuths.every(a => a === AUTH);
+
 console.log("\n--- assertions ---");
 console.log("event sequence matches §9 fixture:", ok ? "PASS" : "FAIL");
 console.log("  expected:", expectedTypes.join(", "));
@@ -133,6 +147,8 @@ console.log("  got:     ", got.join(", "));
 console.log("user message persisted via Backplane:", userPersisted ? "PASS" : "FAIL");
 console.log("assistant message persisted with thinkingSteps/toolCalls/sources/tokenUsage:", assistantPersisted ? "PASS" : "FAIL");
 console.log("token validated against /api-authenticated:", validateCalls === 1 ? "PASS" : `FAIL (called ${validateCalls} times)`);
+console.log("validator call uses workspaceApiKey:", validatorAuthOk ? "PASS" : `FAIL (got ${JSON.stringify(validateAuths)})`);
+console.log("Backplane persistence uses user JWT:", persistenceAuthOk ? "PASS" : `FAIL (got ${JSON.stringify(persistenceAuths)})`);
 
 // ---------- bad-token check: server should 401 before invoking the handler ----------
 const badRes = await fetch(`http://127.0.0.1:${sharelyPort}/agent/threads/${THREAD_ID}/chat`, {
@@ -145,4 +161,7 @@ console.log("bad token rejected with 401:", badOk ? "PASS" : `FAIL (got ${badRes
 
 mockServer.close();
 sharelyServer.close();
-process.exit(ok && userPersisted && assistantPersisted && validateCalls >= 1 && badOk ? 0 : 1);
+process.exit(
+  ok && userPersisted && assistantPersisted && validateCalls >= 1 && badOk
+    && validatorAuthOk && persistenceAuthOk ? 0 : 1
+);

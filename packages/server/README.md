@@ -36,7 +36,7 @@ That's it. Customer-side adapter packages (`@sharely/adapter-vercel-ai`, `@share
 ## What this owns (so you don't reimplement it)
 
 - **HTTP**: Express, CORS, 10 MB body limits, auth-keyed rate limit on the chat route.
-- **Auth proxy**: extracts the incoming bearer, rejects `null`/`undefined`/`public`, forwards it unchanged on every Backplane call. RBAC stays in `sharelyai-be` — this server never mints or validates tokens.
+- **Auth split**: extracts the incoming bearer, rejects `null`/`undefined`/`public`. The configured `workspaceApiKey` is used **only** to call `/api-authenticated` (validating the incoming user token is admin-class). Every other Backplane call (persistence, RAG) forwards the **incoming user JWT** so the platform's RBAC checks (`getTokenRoleId` against `agentThread.roleId`) operate against the real user. This server never mints tokens.
 - **Persistence**: routes user + assistant `agentMessage` rows through `@sharely/api` against the agent-threads Backplane, including the rich columns (`thinkingSteps`, `toolCalls`, `sources`, `tokenUsage`).
 - **Streaming**: extracted SSE encoder from `sharelyai-be/agent/sse.ts`, client-disconnect → `AbortSignal`.
 - **Routes**:
