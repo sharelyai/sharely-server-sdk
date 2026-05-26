@@ -1,78 +1,45 @@
-import type { Source } from '@sharelyai/protocol';
-import type { SharelyAPIClient } from '@sharelyai/api';
-import type { ExecutorRegistry } from './index.js';
+import { definitions } from './definitions.js';
 
-interface RagMatchLike {
-  id: string;
-  score: number;
-  metadata?: Record<string, unknown>;
-}
+// types
+import type { ToolContext, ToolResult } from '@sharelyai/protocol';
+import type { SharelyAPIClient, ToolExecuteContext } from '@sharelyai/api';
+import type { ExecutorRegistry, ToolExecutor } from './index.js';
 
-const ragMatchToSource = (m: RagMatchLike): Source => {
-  const meta = m.metadata ?? {};
-  const title =
-    typeof meta['title'] === 'string'
-      ? (meta['title'] as string)
-      : typeof meta['source'] === 'string'
-        ? (meta['source'] as string)
-        : 'Result';
-  const url =
-    typeof meta['url'] === 'string'
-      ? (meta['url'] as string)
-      : typeof meta['sourceUrl'] === 'string'
-        ? (meta['sourceUrl'] as string)
-        : undefined;
-  return {
-    id: m.id,
-    type: 'semantic',
-    title,
-    ...(url ? { url } : {}),
-    metadata: { score: m.score, ...meta },
-  };
-};
+const toExecuteContext = (ctx: ToolContext): ToolExecuteContext => ({
+  ...(ctx.spaceId !== undefined && { spaceId: ctx.spaceId }),
+  ...(ctx.userId !== undefined && { userId: ctx.userId }),
+  ...(ctx.roleId !== undefined && { roleId: ctx.roleId }),
+  ...(ctx.languageId !== undefined && { languageId: ctx.languageId }),
+  ...(ctx.topK !== undefined && { topK: ctx.topK }),
+});
 
 /**
- * Platform-backed executors for the Sharely tools that have a Backplane
- * endpoint **today**. Pass the result to `createTools(...)`.
+ * Platform-backed executors for **every** first-party Sharely tool definition.
  *
- * Shipped: `semantic_search` — backed by `@sharelyai/api`'s `rag()` (embedding +
- * vector retrieval against the workspace knowledge base).
+ * All tools are routed through the single dispatcher endpoint
+ * `POST /v1/workspaces/:wsId/agent/tools/:name/execute` exposed by
+ * `sharelyai-be`.
  *
- * NOT shipped, intentionally: `search_knowledge` (keyword/ILIKE search) and the
- * taxonomy / workspace-stats / roles tools — they require Backplane endpoints
- * that do not exist yet. Backing `search_knowledge` with `rag()` would make a
- * keyword tool silently do semantic search, misleading the model. Wire those
- * yourself via `createTools({ search_knowledge: yourExecutor, ... })`.
+ * Pass the result to `createTools(...)`.
+ *
+ * ```ts
+ * import { createTools, createPlatformExecutors } from '@sharelyai/tools';
+ * const tools = createTools(createPlatformExecutors(context.api));
+ * ```
  */
 export const createPlatformExecutors = (
   api: SharelyAPIClient,
-): ExecutorRegistry => ({
-  semantic_search: async input => {
-    const text = typeof input['text'] === 'string' ? input['text'].trim() : '';
-    if (!text) return { error: "semantic_search requires a non-empty 'text'" };
-
-    const topK = typeof input['topK'] === 'number' ? input['topK'] : undefined;
-    const languageId =
-      typeof input['languageId'] === 'string'
-        ? (input['languageId'] as string)
-        : undefined;
-
-    const matches = await api.rag({
-      text,
-      ...(topK !== undefined ? { topK } : {}),
-      ...(languageId !== undefined ? { languageId } : {}),
-    });
-
-    return {
-      output: {
-        totalResults: matches.length,
-        results: matches.map(m => ({
-          id: m.id,
-          score: m.score,
-          ...(m.metadata ?? {}),
-        })),
-      },
-      sources: matches.map(ragMatchToSource),
+): ExecutorRegistry => {
+  const registry: ExecutorRegistry = {};
+  for (const def of definitions) {
+    const executor: ToolExecutor = async (input, ctx) => {
+      const result = await api.executeTool(def.name, {
+        input,
+        context: toExecuteContext(ctx),
+      });
+      return result as ToolResult;
     };
-  },
-});
+    registry[def.name] = executor;
+  }
+  return registry;
+};

@@ -70,16 +70,23 @@ export interface StoreMessageInput {
   metadata?: Record<string, unknown>;
 }
 
-export interface RagInput {
-  text: string;
-  topK?: number;
+export interface ToolExecuteContext {
+  spaceId?: string;
+  userId?: string;
+  roleId?: string | null;
   languageId?: string;
+  topK?: number;
 }
 
-export interface RagMatch {
-  id: string;
-  score: number;
-  metadata?: Record<string, unknown>;
+export interface ToolExecuteInput {
+  input: Record<string, unknown>;
+  context?: ToolExecuteContext;
+}
+
+export interface ToolExecuteResult {
+  output?: unknown;
+  sources?: Source[];
+  error?: string;
 }
 
 export interface TokenValidationResult {

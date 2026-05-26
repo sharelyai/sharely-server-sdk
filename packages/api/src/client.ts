@@ -5,13 +5,13 @@ import type {
   AgentThread,
   AgentThreadWithMessages,
   CreateThreadInput,
-  RagInput,
-  RagMatch,
   StoreMessageInput,
   StoredAgentMessage,
   ThreadListInput,
   ThreadListResponse,
   TokenValidationResult,
+  ToolExecuteInput,
+  ToolExecuteResult,
 } from './types.js';
 
 export interface SharelyAPIClientConfig {
@@ -50,7 +50,7 @@ export interface SharelyAPIClient extends ProtocolStub {
   tokens: {
     validate(token: string): Promise<TokenValidationResult>;
   };
-  rag(input: RagInput): Promise<RagMatch[]>;
+  executeTool(name: string, body: ToolExecuteInput): Promise<ToolExecuteResult>;
 }
 
 export const createSharelyAPIClient = (
@@ -114,12 +114,12 @@ export const createSharelyAPIClient = (
           })
         ).data,
     },
-    rag: async input =>
+    executeTool: async (name, body) =>
       (
-        await transport<RagMatch[]>({
+        await transport<ToolExecuteResult>({
           method: 'POST',
-          url: `/v1/workspaces/${ws}/agent/rag`,
-          body: input,
+          url: `/v1/workspaces/${ws}/agent/tools/${encodeURIComponent(name)}/execute`,
+          body,
           headers,
         })
       ).data,

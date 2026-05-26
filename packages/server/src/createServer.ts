@@ -69,9 +69,52 @@ export const createSharelyServer = (
     baseUrl: opts.apiUrl,
     timeoutMs: opts.fetcherTimeoutMs,
   });
-  const platformAuth = opts.workspaceApiKey.startsWith('Bearer ')
-    ? opts.workspaceApiKey
-    : `Bearer ${opts.workspaceApiKey}`;
+
+  // `workspaceApiKey` is the raw `sk-sharely-*` key issued from the workspace
+  // settings. The Backplane middleware (`isApiKeyAuthenticated`) only accepts
+  // the *exchanged* access JWT, so we lazily POST it through
+  // `/workspaces/:wsId/generate-access-key-token` on first chat request and
+  // cache the resulting JWT. The cached promise is cleared on failure so the
+  // next request retries.
+  const apiUrlRoot = opts.apiUrl.replace(/\/$/, '');
+  let platformAuthPromise: Promise<string> | null = null;
+  const resolvePlatformAuth = (): Promise<string> => {
+    if (platformAuthPromise) return platformAuthPromise;
+
+    platformAuthPromise = (async () => {
+      try {
+        const rawKey = opts.workspaceApiKey
+          .replace(/^Bearer\s+/i, '')
+          .trim();
+        const url = `${apiUrlRoot}/workspaces/${encodeURIComponent(opts.workspaceId)}/generate-access-key-token`;
+        const res = await fetch(url, {
+          method: 'POST',
+          headers: {
+            'content-type': 'application/json',
+            'x-api-key': rawKey,
+          },
+          body: JSON.stringify({}),
+        });
+        if (!res.ok) {
+          const text = await res.text().catch(() => '');
+          throw new Error(
+            `generate-access-key-token failed: ${res.status} ${res.statusText} ${text}`,
+          );
+        }
+        const data = (await res.json()) as { token?: string };
+        if (!data?.token) {
+          throw new Error('generate-access-key-token returned no token');
+        }
+        logger.info('exchanged sk-sharely-* for access JWT');
+        return `Bearer ${data.token}`;
+      } catch (err) {
+        platformAuthPromise = null;
+        throw err;
+      }
+    })();
+    return platformAuthPromise;
+  };
+
   const validateIncoming = opts.validateIncomingToken ?? true;
   const app = express();
   const bodyLimit = opts.bodyLimit ?? '10mb';
@@ -136,12 +179,28 @@ export const createSharelyServer = (
       if (isInvalidBearer(authorization))
         return fail(res, 401, 'Authentication Error', 'Invalid bearer token');
 
+      let platformAuth: string;
+      try {
+        platformAuth = await resolvePlatformAuth();
+      } catch (err) {
+        logger.error(
+          'failed to exchange sk-sharely-* for access JWT',
+          err instanceof Error ? err.message : err,
+        );
+        return fail(
+          res,
+          500,
+          'Internal Server Error',
+          'Could not exchange workspace API key for an access token',
+        );
+      }
+
       let userId: string | undefined;
       let temporalUserId: string | undefined;
       let roleId: string | undefined;
       if (validateIncoming) {
         // /v1/workspaces/:wsId/api-authenticated requires admin-class auth
-        // (workspaceApiKey) because it validates someone else's token. This
+        // (the exchanged JWT) because it validates someone else's token. This
         // validator client is used ONLY for that one call.
         const validatorApi = createSharelyAPIClient({
           baseUrl: opts.apiUrl,
@@ -179,14 +238,16 @@ export const createSharelyServer = (
         }
       }
 
-      // Backplane persistence / RAG / AgentContext.api use the incoming user
-      // token so the platform's RBAC checks (`getTokenRoleId` against
-      // `agentThread.roleId`) operate against the real user — not the workspace
-      // admin key. workspaceApiKey is reserved for `tokens.validate` above.
+      // Backplane persistence / tool dispatch / AgentContext.api use the
+      // workspace API key because sharelyai-be's Backplane routes are guarded
+      // by `isApiKeyAuthenticated`, which only accepts workspace API keys.
+      // The validated user's roleId is propagated separately via `roleId` (and
+      // included in each tool-dispatch body's `context`) so platform-side RBAC
+      // still operates against the real user, not the workspace admin.
       const api = createSharelyAPIClient({
         baseUrl: opts.apiUrl,
         workspaceId: opts.workspaceId,
-        authorization,
+        authorization: platformAuth,
         ...(roleId !== undefined && { roleId }),
       });
 
@@ -206,12 +267,20 @@ export const createSharelyServer = (
         ...(typeof topK === 'number' && { topK }),
       });
 
-      const handler =
-        typeof opts.handler === 'function' && opts.handler.length === 1
-          ? await (opts.handler as (r: Request) => Handler | Promise<Handler>)(
-              req,
-            )
-          : (opts.handler as Handler);
+      // `opts.handler` can be a Handler (`async function*(input)`) OR a
+      // per-request factory (`(req) => Handler`). Both have arity 1, so we
+      // can't differentiate by `.length`. Async generator functions have a
+      // dedicated constructor name; anything else is treated as a factory.
+      const isAsyncGenFn = (fn: unknown): boolean =>
+        typeof fn === 'function' &&
+        (fn as { constructor?: { name?: string } }).constructor?.name ===
+          'AsyncGeneratorFunction';
+
+      const handler = isAsyncGenFn(opts.handler)
+        ? (opts.handler as Handler)
+        : await (opts.handler as (r: Request) => Handler | Promise<Handler>)(
+            req,
+          );
 
       try {
         await runHandler({

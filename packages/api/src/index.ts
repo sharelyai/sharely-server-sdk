@@ -3,7 +3,7 @@ export type { SharelyAPIClient, SharelyAPIClientConfig } from "./client.js";
 export { defaultTransport, SharelyAPIError } from "./transport.js";
 export type { Transport, TransportRequest, TransportResponse } from "./transport.js";
 export type {
-  AgentThread, AgentThreadWithMessages, CreateThreadInput, RagInput, RagMatch,
+  AgentThread, AgentThreadWithMessages, CreateThreadInput,
   StoreMessageInput, StoredAgentMessage, ThreadListInput, ThreadListResponse,
-  TokenValidationResult
+  TokenValidationResult, ToolExecuteContext, ToolExecuteInput, ToolExecuteResult
 } from "./types.js";

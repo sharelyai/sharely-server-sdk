@@ -1,6 +1,6 @@
 {
   "name": "@sharelyai/api",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "Typed client to sharelyai-be (Sharely Platform Services), generated from OpenAPI.",
   "license": "MIT",
   "type": "module",
