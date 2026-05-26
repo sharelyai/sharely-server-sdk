@@ -17,5 +17,5 @@ const app = createSharelyServer({
 
 const port = Number(process.env['PORT'] ?? 8081);
 app.listen(port, () =>
-  console.log(`[live-demo] sharely agent server listening on :${port}`),
+  console.log(`[live-demo-vercel] sharely agent server listening on :${port}`),
 );
