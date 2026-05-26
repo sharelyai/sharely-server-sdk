@@ -28,6 +28,7 @@ interface Accumulator {
   thinking: Map<string, ThinkingStep>;
   toolCalls: Map<string, ToolCallRecord>;
   sources: Source[];
+  metadata: Record<string, unknown>;
   tokenUsage?: TokenUsage;
   model?: string;
   finishReason: string;
@@ -81,7 +82,12 @@ const reduce = (a: Accumulator, e: AgentEvent): void => {
       return;
     }
     case 'sources':
-      a.sources = e.sources;
+      // Append, not replace — multiple tool calls can each emit a sources
+      // event and the assistant message should aggregate them.
+      for (const s of e.sources) a.sources.push(s);
+      return;
+    case 'metadata_update':
+      Object.assign(a.metadata, e.metadata);
       return;
     case 'message_end':
       a.finishReason = e.finishReason;
@@ -93,12 +99,14 @@ const reduce = (a: Accumulator, e: AgentEvent): void => {
   }
 };
 
-const assistant = (a: Accumulator): StoreMessageInput => ({
+const assistant = (a: Accumulator, id: string): StoreMessageInput => ({
+  id,
   role: 'assistant',
   content: a.content || null,
   thinkingSteps: [...a.thinking.values()],
   toolCalls: [...a.toolCalls.values()],
   sources: a.sources,
+  ...(Object.keys(a.metadata).length > 0 && { metadata: a.metadata }),
   ...(a.tokenUsage && { tokenUsage: a.tokenUsage }),
   ...(a.model && { model: a.model }),
   finishReason: a.finishReason,
@@ -126,6 +134,7 @@ export const runHandler = async ({
   writeSSEHeaders(res);
 
   await api.threads.messages.create(context.threadId, {
+    id: newId(),
     role: 'user',
     content: message,
   });
@@ -144,6 +153,7 @@ export const runHandler = async ({
     thinking: new Map(),
     toolCalls: new Map(),
     sources: [],
+    metadata: {},
     finishReason: 'stop',
   };
   let errored = false;
@@ -169,7 +179,7 @@ export const runHandler = async ({
     try {
       const stored = await api.threads.messages.create(
         context.threadId,
-        assistant(acc),
+        assistant(acc, context.trace.messageId),
       );
       envelope.messageId = stored.id;
     } catch (err) {

@@ -72,6 +72,17 @@ export const rawHandler: Handler = async function* (input) {
         durationMs: Date.now() - started,
       };
 
+      // Attach per-tool structured extras to the assistant message's
+      // `metadata` column. Pipeline reducers shallow-merge each event, so
+      // emit one key per tool (mirroring how the hosted Anthropic loop
+      // records `metadata.<toolName>.*`). Skip if the tool errored.
+      if (!result.error && result.output && typeof result.output === 'object') {
+        yield {
+          type: 'metadata_update',
+          metadata: { [turn.toolCall.name]: result.output },
+        };
+      }
+
       // Loop back: next iteration feeds the tool result back to the LLM.
       continue;
     }

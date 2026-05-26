@@ -1,6 +1,6 @@
 {
   "name": "@sharelyai/protocol",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "Wire protocol types for the Sharely agent server SDK. Types only — no runtime code.",
   "license": "MIT",
   "type": "module",

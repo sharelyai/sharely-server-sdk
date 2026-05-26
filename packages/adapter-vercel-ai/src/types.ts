@@ -29,6 +29,13 @@ export interface VercelStreamPart {
     promptTokens?: number;
     completionTokens?: number;
   };
+  totalUsage?: {
+    inputTokens?: number;
+    outputTokens?: number;
+    totalTokens?: number;
+    promptTokens?: number;
+    completionTokens?: number;
+  };
   error?: unknown;
 }
 

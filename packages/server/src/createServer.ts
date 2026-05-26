@@ -83,9 +83,7 @@ export const createSharelyServer = (
 
     platformAuthPromise = (async () => {
       try {
-        const rawKey = opts.workspaceApiKey
-          .replace(/^Bearer\s+/i, '')
-          .trim();
+        const rawKey = opts.workspaceApiKey.replace(/^Bearer\s+/i, '').trim();
         const url = `${apiUrlRoot}/workspaces/${encodeURIComponent(opts.workspaceId)}/generate-access-key-token`;
         const res = await fetch(url, {
           method: 'POST',
@@ -251,13 +249,27 @@ export const createSharelyServer = (
         ...(roleId !== undefined && { roleId }),
       });
 
+      // `X-Sharely-Message-Id` is set by sharelyai-be's proxyToAgentServer:
+      // it's the trace messageId for which sharelyai-be has already pre-
+      // created an empty assistant AgentMessage row. Using it as our trace
+      // messageId means the SSE envelope, AgentLog correlation, and the id
+      // we pass to Backplane storeMessage all align with that single row.
+      const proxiedMessageIdHeader = req.headers['x-sharely-message-id'];
+      const proxiedMessageId = Array.isArray(proxiedMessageIdHeader)
+        ? proxiedMessageIdHeader[0]
+        : proxiedMessageIdHeader;
+      const assistantMessageId =
+        typeof proxiedMessageId === 'string' && proxiedMessageId.trim()
+          ? proxiedMessageId.trim()
+          : newId();
+
       const context = buildAgentContext({
         workspaceId: opts.workspaceId,
         threadId,
         authorization,
         apiBaseUrl: opts.apiUrl,
         traceId: newId(),
-        messageId: newId(),
+        messageId: assistantMessageId,
         apiClient: api,
         ...(userId && { userId }),
         ...(temporalUserId && { temporalUserId }),

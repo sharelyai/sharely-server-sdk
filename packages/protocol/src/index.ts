@@ -25,6 +25,7 @@ export type {
   ContentDeltaEvent,
   ContentEndEvent,
   SourcesEvent,
+  MetadataUpdateEvent,
   MessageEndEvent,
   ErrorEvent,
   DoneEvent,

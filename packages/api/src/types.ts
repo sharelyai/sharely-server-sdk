@@ -59,6 +59,14 @@ export interface ThreadListResponse {
 }
 
 export interface StoreMessageInput {
+  /**
+   * Required. The Backplane uses this to upsert into a pre-created draft row
+   * (assistant messages seeded by sharelyai-be's chat() controller so logs
+   * can FK-reference messageId from the very first event) or to create a new
+   * row with a known id (user messages). The Backplane rejects any id that
+   * already belongs to a different thread.
+   */
+  id: string;
   role: 'user' | 'assistant';
   content: string | null;
   thinkingSteps?: ThinkingStep[];

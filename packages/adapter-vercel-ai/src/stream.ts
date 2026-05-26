@@ -10,12 +10,13 @@ import type {
   VercelStreamPart,
   VercelStreamResult,
 } from './types.js';
+import { drainToolExtras } from './tool-extras.js';
 
 const readText = (p: VercelStreamPart): string =>
   p.textDelta ?? p.text ?? p.delta ?? '';
 
 const readUsage = (p: VercelStreamPart): TokenUsage => {
-  const u = p.usage ?? {};
+  const u = p.totalUsage ?? p.usage ?? {};
   const inputTokens = u.inputTokens ?? u.promptTokens ?? 0;
   const outputTokens = u.outputTokens ?? u.completionTokens ?? 0;
   return {
@@ -113,6 +114,18 @@ export const fromVercelAI = (
             output: part.result ?? part.output,
             durationMs: 0,
           };
+          // Flush anything the Sharely-tool wrapper stashed on the way back
+          // (sources + per-tool metadata). Per-result drain so events stay
+          // interleaved with the tool that produced them.
+          {
+            const drained = drainToolExtras(input.context);
+            if (drained.sources.length > 0) {
+              for (const s of drained.sources) sources.push(s);
+            }
+            if (Object.keys(drained.metadata).length > 0) {
+              yield { type: 'metadata_update', metadata: drained.metadata };
+            }
+          }
           break;
         case 'source': {
           const s = part.source ?? {};

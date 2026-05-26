@@ -95,6 +95,20 @@ export const sharelyAgentWorkflow = async (
     type: 'content_delta',
     delta: `Echo: ${input.message}`,
   });
+
+  // Optional: after a tool activity completes, surface its sources and any
+  // per-tool extras you want to keep on the assistant message. The pipeline
+  // appends `sources` events and shallow-merges `metadata_update` events
+  // into the persisted assistant row.
+  // emitAgentEvent(sink, {
+  //   type: 'sources',
+  //   sources: toolResult.sources,
+  // });
+  // emitAgentEvent(sink, {
+  //   type: 'metadata_update',
+  //   metadata: { [toolName]: toolResult.output },
+  // });
+
   emitAgentEvent(sink, { type: 'content_end' });
   emitAgentEvent(sink, {
     type: 'message_end',

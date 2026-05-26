@@ -11,6 +11,7 @@ export type SSEEventType =
   | "content_delta"
   | "content_end"
   | "sources"
+  | "metadata_update"
   | "message_end"
   | "error"
   | "done";
@@ -69,6 +70,18 @@ export interface SourcesEvent {
   sources: Source[];
 }
 
+/**
+ * Attaches structured per-tool extras to the assistant message's `metadata`
+ * column. Mirrors the way the hosted Anthropic loop records
+ * `metadata.<toolName>.*` for first-party tools (e.g. semantic_search's
+ * dataArraySortedWithSource). Pipeline reducers shallow-merge each event's
+ * `metadata` into the accumulated metadata object.
+ */
+export interface MetadataUpdateEvent {
+  type: "metadata_update";
+  metadata: Record<string, unknown>;
+}
+
 export interface MessageEndEvent {
   type: "message_end";
   finishReason: string;
@@ -90,6 +103,7 @@ export type AgentEvent =
   | ContentDeltaEvent
   | ContentEndEvent
   | SourcesEvent
+  | MetadataUpdateEvent
   | MessageEndEvent
   | ErrorEvent;
 

@@ -6,6 +6,7 @@ import {
   getDefinitionByName,
   type ToolExecutor,
 } from '@sharelyai/tools';
+import { pushToolExtras } from './tool-extras.js';
 
 /**
  * `@sharelyai/adapter-vercel-ai/tools` — the first-party Sharely tools wrapped as
@@ -61,7 +62,16 @@ const sharelyTool =
           };
         }
         const result = await run(input, toolContext);
-        return result.error ? { error: result.error } : (result.output ?? null);
+        if (result.error) return { error: result.error };
+        // Stash sources + structured output keyed by tool name; the stream
+        // translator drains this after each tool-result part and emits
+        // `sources` / `metadata_update` events so the assistant message ends
+        // up with the same richness as the hosted Anthropic loop's row.
+        pushToolExtras(context, name, {
+          ...(result.sources ? { sources: result.sources } : {}),
+          ...(result.output !== undefined ? { output: result.output } : {}),
+        });
+        return result.output ?? null;
       },
     });
   };
