@@ -77,21 +77,35 @@ export const createSharelyServer = (
   // cache the resulting JWT. The cached promise is cleared on failure so the
   // next request retries.
   const apiUrlRoot = opts.apiUrl.replace(/\/$/, '');
-  let platformAuthPromise: Promise<string> | null = null;
-  const resolvePlatformAuth = (): Promise<string> => {
-    if (platformAuthPromise) return platformAuthPromise;
 
-    platformAuthPromise = (async () => {
+  // `workspaceApiKey` is the raw `sk-sharely-*` key. The Backplane middleware
+  // only accepts the *exchanged* access JWT, and on RBAC-enabled workspaces
+  // that JWT must embed the acting user's role (`user_metadata.roleId`) or
+  // Backplane writes 400 with "A roleId is required …". So we exchange
+  // per-role and cache by role. The role-less exchange (key `__norole__`) is
+  // used only to call `/api-authenticated` (which doesn't need a role).
+  type RoleClaim = { roleId?: string; customerRoleId?: string };
+  const NO_ROLE = '__norole__';
+  const platformAuthByRole = new Map<string, Promise<string>>();
+  const resolvePlatformAuth = (role?: RoleClaim): Promise<string> => {
+    const cacheKey = role?.roleId ?? role?.customerRoleId ?? NO_ROLE;
+    const cached = platformAuthByRole.get(cacheKey);
+    if (cached) return cached;
+
+    const p = (async () => {
       try {
         const rawKey = opts.workspaceApiKey.replace(/^Bearer\s+/i, '').trim();
         const url = `${apiUrlRoot}/workspaces/${encodeURIComponent(opts.workspaceId)}/generate-access-key-token`;
+        const body: RoleClaim = {};
+        if (role?.roleId) body.roleId = role.roleId;
+        else if (role?.customerRoleId) body.customerRoleId = role.customerRoleId;
         const res = await fetch(url, {
           method: 'POST',
           headers: {
             'content-type': 'application/json',
             'x-api-key': rawKey,
           },
-          body: JSON.stringify({}),
+          body: JSON.stringify(body),
         });
         if (!res.ok) {
           const text = await res.text().catch(() => '');
@@ -103,14 +117,17 @@ export const createSharelyServer = (
         if (!data?.token) {
           throw new Error('generate-access-key-token returned no token');
         }
-        logger.info('exchanged sk-sharely-* for access JWT');
+        logger.info('exchanged sk-sharely-* for access JWT', {
+          role: cacheKey,
+        });
         return `Bearer ${data.token}`;
       } catch (err) {
-        platformAuthPromise = null;
+        platformAuthByRole.delete(cacheKey);
         throw err;
       }
     })();
-    return platformAuthPromise;
+    platformAuthByRole.set(cacheKey, p);
+    return p;
   };
 
   const validateIncoming = opts.validateIncomingToken ?? true;
@@ -177,9 +194,12 @@ export const createSharelyServer = (
       if (isInvalidBearer(authorization))
         return fail(res, 401, 'Authentication Error', 'Invalid bearer token');
 
-      let platformAuth: string;
+      // Step 1: a role-less access JWT, used only to validate the incoming
+      // user token via /api-authenticated (that endpoint needs admin-class
+      // auth but no role).
+      let baseAuth: string;
       try {
-        platformAuth = await resolvePlatformAuth();
+        baseAuth = await resolvePlatformAuth();
       } catch (err) {
         logger.error(
           'failed to exchange sk-sharely-* for access JWT',
@@ -196,14 +216,12 @@ export const createSharelyServer = (
       let userId: string | undefined;
       let temporalUserId: string | undefined;
       let roleId: string | undefined;
+      let customerRoleId: string | undefined;
       if (validateIncoming) {
-        // /v1/workspaces/:wsId/api-authenticated requires admin-class auth
-        // (the exchanged JWT) because it validates someone else's token. This
-        // validator client is used ONLY for that one call.
         const validatorApi = createSharelyAPIClient({
           baseUrl: opts.apiUrl,
           workspaceId: opts.workspaceId,
-          authorization: platformAuth,
+          authorization: baseAuth,
         });
         const token = authorization.replace(/^Bearer\s+/i, '').trim();
         try {
@@ -218,9 +236,8 @@ export const createSharelyServer = (
           }
           userId = result.id;
           temporalUserId = result.temporalUserId;
-          roleId =
-            result.user_metadata?.roleId ??
-            result.user_metadata?.customerRoleId;
+          roleId = result.user_metadata?.roleId;
+          customerRoleId = result.user_metadata?.customerRoleId;
         } catch (err) {
           const status = err instanceof SharelyAPIError ? err.status : 401;
           logger.warn(
@@ -236,12 +253,36 @@ export const createSharelyServer = (
         }
       }
 
+      // Step 2: exchange again *with the user's role* so the access JWT used
+      // for Backplane carries `user_metadata.roleId`. RBAC-enabled workspaces
+      // reject role-less tokens on writes (getTokenRoleId). Falls back to the
+      // role-less token when the user has no role (non-RBAC workspaces).
+      let platformAuth = baseAuth;
+      if (roleId || customerRoleId) {
+        try {
+          platformAuth = await resolvePlatformAuth({
+            ...(roleId && { roleId }),
+            ...(customerRoleId && { customerRoleId }),
+          });
+        } catch (err) {
+          logger.error(
+            'failed to exchange role-scoped access JWT',
+            err instanceof Error ? err.message : err,
+          );
+          return fail(
+            res,
+            500,
+            'Internal Server Error',
+            'Could not exchange workspace API key for a role-scoped access token',
+          );
+        }
+      }
+
       // Backplane persistence / tool dispatch / AgentContext.api use the
-      // workspace API key because sharelyai-be's Backplane routes are guarded
-      // by `isApiKeyAuthenticated`, which only accepts workspace API keys.
-      // The validated user's roleId is propagated separately via `roleId` (and
-      // included in each tool-dispatch body's `context`) so platform-side RBAC
-      // still operates against the real user, not the workspace admin.
+      // role-scoped access JWT so sharelyai-be's RBAC (getTokenRoleId against
+      // the token + agentThread.roleId) operates as the real user. The
+      // resolved role UUID is also surfaced via `roleId` for tool-dispatch
+      // bodies.
       const api = createSharelyAPIClient({
         baseUrl: opts.apiUrl,
         workspaceId: opts.workspaceId,

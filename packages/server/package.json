@@ -1,6 +1,6 @@
 {
   "name": "@sharelyai/server",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "description": "Express runtime for Sharely-compatible agent servers. HTTP, auth, persistence, SSE encoding.",
   "license": "MIT",
   "type": "module",
