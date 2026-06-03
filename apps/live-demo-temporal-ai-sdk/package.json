@@ -1,0 +1,35 @@
+{
+  "name": "sharely-live-demo-temporal-ai-sdk",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/server.js",
+    "start:worker": "node dist/worker.js",
+    "dev": "node --import tsx/esm src/server.ts",
+    "dev:worker": "tsc -p tsconfig.json && node dist/worker.js"
+  },
+  "dependencies": {
+    "@ai-sdk/mcp": "^1.0.0",
+    "@ai-sdk/openai": "^3.0.0",
+    "@ai-sdk/provider": "^3.0.0",
+    "@sharelyai/adapter-temporal": "*",
+    "@sharelyai/protocol": "*",
+    "@sharelyai/server": "*",
+    "@temporalio/activity": "^1.17.2",
+    "@temporalio/ai-sdk": "^1.17.2",
+    "@temporalio/client": "^1.17.2",
+    "@temporalio/worker": "^1.17.2",
+    "@temporalio/workflow": "^1.17.2",
+    "ai": "^6.0.0",
+    "dotenv": "^16.4.5",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "@sharelyai/tsconfig": "*",
+    "@types/node": "^20.17.10",
+    "tsx": "^4.19.2",
+    "typescript": "^5.6.3"
+  }
+}
