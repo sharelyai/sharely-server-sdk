@@ -14,7 +14,7 @@ npm i @sharelyai/server @sharelyai/protocol
 import { createSharelyServer } from '@sharelyai/server';
 
 const app = createSharelyServer({
-  apiUrl: process.env.SHARELY_API_URL!, // e.g. https://sharely-develop.fly.dev
+  apiUrl: process.env.SHARELY_API_URL!, // e.g. https://api.sharely.ai
   workspaceId: process.env.WORKSPACE_ID!,
   allowedOrigins: process.env.ALLOWED_ORIGINS,
   handler: async function* (input) {
@@ -49,6 +49,54 @@ That's it. Customer-side adapter packages (`@sharelyai/adapter-vercel-ai`, `@sha
 ## What `Handler`s should NOT do
 
 Mint tokens, persist messages, define new event types, or invent cancellation primitives. Yield typed `AgentEvent`s, let the server own the wire + persistence + auth surface.
+
+## Configuration
+
+`createSharelyServer(options)` — key options beyond the required `apiUrl` / `workspaceId` / `workspaceApiKey` / `handler`:
+
+| Option | Default | Purpose |
+| --- | --- | --- |
+| `allowedOrigins` | _unset_ | CORS allowlist (string or string[]). **See Security below** — leaving it unset disables cross-origin browser requests. |
+| `enableProxy` | `true` | Enable the catch-all reverse proxy. Set `false` to return 404 for unmatched routes. **See Security below.** |
+| `logger` | console logger | A `Logger` (`debug`/`info`/`warn`/`error`) to integrate with your stack (pino, winston, …). |
+| `rateLimitPerMinute` | `20` | Per-auth-key rate limit on the chat route. |
+| `fetcherTimeoutMs` | `30000` | Upstream request timeout. |
+| `validateIncomingToken` | `true` | Validate the incoming user token against the platform before invoking the `Handler`. |
+
+## Security boundaries
+
+Two behaviours are explicit trust/security boundaries — understand them before deploying:
+
+### CORS default
+
+`allowedOrigins` is optional. When it is **not set**, the server does **not** reflect arbitrary origins (which, combined with `credentials: true`, would mean "allow any origin with credentials"). Instead, cross-origin browser requests are **disabled** and a warning is logged at startup. Set `allowedOrigins` to your front-end origin(s) to enable browser clients in production.
+
+### Catch-all reverse proxy (`enableProxy`, default `true`)
+
+Any request that doesn't match `/agent/threads/:threadId/chat`, `/goals/spaces/:spaceId`, or `/health` is **forwarded as-is to `apiUrl`**, passing the caller's headers through — **including `Authorization`**. This passthrough performs **no token validation of its own**; it delegates authorization entirely to the Sharely backend. Implications:
+
+- It is a transparent pass-through to the platform, not a curated API. Routes you can reach through it are not part of this SDK's contract and may change.
+- Auth is the backend's responsibility on this path.
+
+Set `enableProxy: false` to disable it entirely (unmatched routes then 404). A future release may add a route allowlist; until then it is all-or-nothing.
+
+## Graceful shutdown
+
+`installGracefulShutdown(server, options?)` wires `SIGTERM`/`SIGINT` handlers that stop accepting new connections, let in-flight requests and SSE streams drain (bounded by `timeoutMs`, default 10s), run an optional `onShutdown` hook, then exit:
+
+```ts
+import { createSharelyServer, installGracefulShutdown } from '@sharelyai/server';
+
+const app = createSharelyServer({ /* … */ });
+const server = app.listen(8080);
+installGracefulShutdown(server, { onShutdown: () => pool.end() });
+```
+
+## Observability
+
+Pass a custom `logger` to route output to your logging stack. The default is a console logger whose `debug` level is gated on `DEBUG=true`.
+
+> **Note:** `AgentContext.trace` (`TraceSpan`) is currently a **stub** — its `event`/`child`/`end` calls write to the debug logger only. There is no real OpenTelemetry/distributed-tracing wiring yet. Treat it as a placeholder API.
 
 ## See also
 

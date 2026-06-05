@@ -2,19 +2,21 @@
   "name": "sharelyai",
   "version": "0.0.1",
   "type": "commonjs",
-  "description": "",
-  "main": "index.js",
+  "description": "Monorepo for the Sharely Server SDK — build Sharely-compatible agent servers (HTTP, auth, persistence, SSE).",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/sharelyai/sharely-server-sdk.git"
   },
-  "author": "",
+  "author": "Sharely.ai Inc.",
   "bugs": {
     "url": "https://github.com/sharelyai/sharely-server-sdk/issues"
   },
   "homepage": "https://github.com/sharelyai/sharely-server-sdk#readme",
   "packageManager": "npm@11.6.4",
-  "license": "MIT",
+  "engines": {
+    "node": ">=20"
+  },
+  "license": "Apache-2.0",
   "private": true,
   "workspaces": [
     "apps/*",
@@ -35,7 +37,7 @@
     "@langchain/core": "^1.1.48",
     "@langchain/langgraph": "^1.3.2",
     "@openai/agents": "^0.11.5",
-    "@sharelyai/tsconfig": "^0.0.0",
+    "@sharelyai/tsconfig": "^0.0.1",
     "@temporalio/client": "^1.16.2",
     "dotenv-cli": "^11.0.0",
     "esbuild": "^0.28.0",

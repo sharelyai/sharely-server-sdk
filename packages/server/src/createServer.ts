@@ -5,7 +5,7 @@ import { createSharelyAPIClient, SharelyAPIError } from '@sharelyai/api';
 import { extractAuthHeader, isInvalidBearer } from './auth.js';
 import { buildAgentContext } from './context.js';
 import { createFetcher, type FetcherError } from './fetcher.js';
-import { logger } from './logger.js';
+import { defaultLogger, type Logger } from './logger.js';
 import { newId, runHandler } from './pipeline.js';
 
 // types
@@ -38,6 +38,21 @@ export interface CreateSharelyServerOptions {
    * Handler. Defaults to `true`. Disable only for trusted test fixtures.
    */
   validateIncomingToken?: boolean;
+  /**
+   * Structured logger used for all server output. Defaults to a console-backed
+   * logger whose `debug` level is gated on `DEBUG=true`. Pass your own (pino,
+   * winston, a no-op, …) to integrate with your logging stack.
+   */
+  logger?: Logger;
+  /**
+   * Enable the catch-all reverse proxy (`app.all('*')`) that forwards any
+   * otherwise-unmatched method/path to the Sharely platform, passing the
+   * caller's headers through (including `Authorization`). Defaults to `true`
+   * for backward compatibility. Set to `false` to disable the passthrough and
+   * return 404 for unmatched routes. See the security note in the package
+   * README — this is an explicit trust boundary.
+   */
+  enableProxy?: boolean;
 }
 
 const errorBody = (status: number, error: string, message: string) => ({
@@ -65,9 +80,12 @@ export const createSharelyServer = (
   if (!opts.handler)
     throw new Error('createSharelyServer: handler is required');
 
+  const logger = opts.logger ?? defaultLogger;
+
   const fetcher = createFetcher({
     baseUrl: opts.apiUrl,
     timeoutMs: opts.fetcherTimeoutMs,
+    logger,
   });
 
   // `workspaceApiKey` is the raw `sk-sharely-*` key issued from the workspace
@@ -86,19 +104,42 @@ export const createSharelyServer = (
   // used only to call `/api-authenticated` (which doesn't need a role).
   type RoleClaim = { roleId?: string; customerRoleId?: string };
   const NO_ROLE = '__norole__';
-  const platformAuthByRole = new Map<string, Promise<string>>();
-  const resolvePlatformAuth = (role?: RoleClaim): Promise<string> => {
-    const cacheKey = role?.roleId ?? role?.customerRoleId ?? NO_ROLE;
-    const cached = platformAuthByRole.get(cacheKey);
-    if (cached) return cached;
 
-    const p = (async () => {
+  // Re-exchange this many ms before the JWT's `exp` so a long-running server
+  // never hands a downstream Backplane call a token that expires mid-flight.
+  const EXP_SKEW_MS = 60_000;
+  // Fallback lifetime when the exchanged token carries no decodable `exp` —
+  // bounded so we never cache a token forever (the original latent-outage bug).
+  const DEFAULT_TTL_MS = 5 * 60_000;
+
+  /** Decode a JWT's `exp` (seconds) into epoch-ms, or a conservative fallback. */
+  const decodeExpMs = (jwt: string): number => {
+    const part = jwt.split('.')[1];
+    if (!part) return Date.now() + DEFAULT_TTL_MS;
+    try {
+      const json = Buffer.from(part, 'base64url').toString('utf8');
+      const exp = (JSON.parse(json) as { exp?: unknown }).exp;
+      return typeof exp === 'number' ? exp * 1000 : Date.now() + DEFAULT_TTL_MS;
+    } catch {
+      return Date.now() + DEFAULT_TTL_MS;
+    }
+  };
+
+  type CachedAuth = { auth: string; expMs: number };
+  const platformAuthByRole = new Map<string, Promise<CachedAuth>>();
+
+  const exchangePlatformAuth = (
+    cacheKey: string,
+    role?: RoleClaim,
+  ): Promise<CachedAuth> => {
+    const p = (async (): Promise<CachedAuth> => {
       try {
         const rawKey = opts.workspaceApiKey.replace(/^Bearer\s+/i, '').trim();
         const url = `${apiUrlRoot}/workspaces/${encodeURIComponent(opts.workspaceId)}/generate-access-key-token`;
         const body: RoleClaim = {};
         if (role?.roleId) body.roleId = role.roleId;
-        else if (role?.customerRoleId) body.customerRoleId = role.customerRoleId;
+        else if (role?.customerRoleId)
+          body.customerRoleId = role.customerRoleId;
         const res = await fetch(url, {
           method: 'POST',
           headers: {
@@ -120,9 +161,13 @@ export const createSharelyServer = (
         logger.info('exchanged sk-sharely-* for access JWT', {
           role: cacheKey,
         });
-        return `Bearer ${data.token}`;
+        return { auth: `Bearer ${data.token}`, expMs: decodeExpMs(data.token) };
       } catch (err) {
-        platformAuthByRole.delete(cacheKey);
+        // Only evict if we're still the active entry, so a concurrent
+        // successful re-exchange isn't clobbered.
+        if (platformAuthByRole.get(cacheKey) === p) {
+          platformAuthByRole.delete(cacheKey);
+        }
         throw err;
       }
     })();
@@ -130,29 +175,60 @@ export const createSharelyServer = (
     return p;
   };
 
+  const resolvePlatformAuth = async (role?: RoleClaim): Promise<string> => {
+    const cacheKey = role?.roleId ?? role?.customerRoleId ?? NO_ROLE;
+    const cached = platformAuthByRole.get(cacheKey);
+    if (cached) {
+      try {
+        const value = await cached;
+        if (Date.now() < value.expMs - EXP_SKEW_MS) return value.auth;
+        // Token is at/near expiry — drop it (if still current) and re-exchange.
+        if (platformAuthByRole.get(cacheKey) === cached) {
+          platformAuthByRole.delete(cacheKey);
+        }
+      } catch {
+        // A failed exchange already evicted itself; fall through and retry.
+      }
+    }
+    return (await exchangePlatformAuth(cacheKey, role)).auth;
+  };
+
   const validateIncoming = opts.validateIncomingToken ?? true;
+  const enableProxy = opts.enableProxy ?? true;
   const app = express();
   const bodyLimit = opts.bodyLimit ?? '10mb';
 
-  app.use(
-    cors({
-      origin: opts.allowedOrigins,
-      credentials: true,
-      optionsSuccessStatus: 204,
-      methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-      allowedHeaders: [
-        'Content-Type',
-        'Authorization',
-        'X-Requested-With',
-        'Accept',
-        'Origin',
-        'x-api-key',
-      ],
-    }),
-  );
+  // When `allowedOrigins` is omitted, the `cors` package would otherwise
+  // reflect *any* request origin; with `credentials: true` that is
+  // "allow all origins with credentials," which is unsafe. Default to blocking
+  // cross-origin browser requests (`origin: false`) and warn loudly. Pass
+  // `allowedOrigins` to enable an explicit allowlist.
+  if (opts.allowedOrigins === undefined) {
+    logger.warn(
+      'createSharelyServer: `allowedOrigins` is not set — cross-origin browser ' +
+        'requests are disabled. Set `allowedOrigins` to your front-end origin(s) ' +
+        'to enable browser clients in production.',
+    );
+  }
+  const corsOptions: cors.CorsOptions = {
+    origin: opts.allowedOrigins ?? false,
+    credentials: true,
+    optionsSuccessStatus: 204,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: [
+      'Content-Type',
+      'Authorization',
+      'X-Requested-With',
+      'Accept',
+      'Origin',
+      'x-api-key',
+    ],
+  };
+
+  app.use(cors(corsOptions));
   app.use(express.json({ limit: bodyLimit }));
   app.use(express.urlencoded({ extended: true, limit: bodyLimit }));
-  app.options('*', cors());
+  app.options('*', cors(corsOptions));
 
   const limiter = rateLimit({
     windowMs: 60_000,
@@ -312,6 +388,7 @@ export const createSharelyServer = (
         traceId: newId(),
         messageId: assistantMessageId,
         apiClient: api,
+        logger,
         ...(userId && { userId }),
         ...(temporalUserId && { temporalUserId }),
         ...(roleId !== undefined && { roleId }),
@@ -342,16 +419,12 @@ export const createSharelyServer = (
           message: message.trim(),
           res,
           api,
+          logger,
         });
       } catch (err) {
         logger.error('chat handler crashed', err);
         if (!res.headersSent) {
-          fail(
-            res,
-            500,
-            'Internal Server Error',
-            err instanceof Error ? err.message : 'Unexpected error',
-          );
+          fail(res, 500, 'Internal Server Error', 'An internal error occurred');
         } else if (!res.writableEnded) {
           res.end();
         }
@@ -384,50 +457,63 @@ export const createSharelyServer = (
     });
   });
 
-  app.all('*', async (req: Request, res: Response) => {
-    logger.debug(`Proxying ${req.method} ${req.url}`);
-    try {
-      const upstream = await fetcher({
-        url: req.url,
-        method: req.method as 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH',
-        body: req.body,
-        headers: req.headers as Record<string, string | string[] | undefined>,
-      });
-      res.status(upstream.status).json(upstream.data);
-    } catch (err) {
-      const e = err as Partial<FetcherError> & { status?: number };
-      const status = e.status ?? 500;
-      logger.error('proxy error', {
-        method: req.method,
-        url: req.url,
-        status,
-        message: e.message,
-      });
-      res
-        .status(status)
-        .json(
-          errorBody(
-            status,
-            e.error ?? 'Request Error',
-            e.message ?? 'Upstream request failed',
-          ),
-        );
-    }
-  });
+  // Catch-all reverse proxy: forwards any otherwise-unmatched method/path to
+  // the Sharely platform, passing the caller's headers (incl. Authorization)
+  // through. This path performs NO token validation of its own — it delegates
+  // authorization entirely to the backend. It is an explicit trust boundary;
+  // see the README. Opt out with `enableProxy: false`.
+  if (enableProxy) {
+    logger.info(
+      'createSharelyServer: catch-all reverse proxy enabled — unmatched routes ' +
+        "are forwarded to the Sharely platform with the caller's headers. Set " +
+        '`enableProxy: false` to disable. See the README security note.',
+    );
+    app.all('*', async (req: Request, res: Response) => {
+      logger.debug(`Proxying ${req.method} ${req.url}`);
+      try {
+        const upstream = await fetcher({
+          url: req.url,
+          method: req.method as 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH',
+          body: req.body,
+          headers: req.headers as Record<
+            string,
+            string | string[] | undefined
+          >,
+        });
+        res.status(upstream.status).json(upstream.data);
+      } catch (err) {
+        const e = err as Partial<FetcherError> & { status?: number };
+        const status = e.status ?? 500;
+        logger.error('proxy error', {
+          method: req.method,
+          url: req.url,
+          status,
+          message: e.message,
+        });
+        res
+          .status(status)
+          .json(
+            errorBody(
+              status,
+              e.error ?? 'Request Error',
+              e.message ?? 'Upstream request failed',
+            ),
+          );
+      }
+    });
+  }
 
   app.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => {
     const e = err as Partial<FetcherError> & { status?: number };
     logger.error('server error', e?.message ?? err);
     const status = e.status ?? 500;
+    // 4xx messages are intentional/validation and safe to surface; 5xx may
+    // carry internal/upstream detail, so return a generic message.
+    const message =
+      status >= 500 ? 'An internal error occurred' : (e.message ?? 'Request error');
     res
       .status(status)
-      .json(
-        errorBody(
-          status,
-          e.error ?? 'Internal Server Error',
-          e.message ?? 'Unexpected error',
-        ),
-      );
+      .json(errorBody(status, e.error ?? 'Internal Server Error', message));
   });
 
   return app;

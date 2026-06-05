@@ -22,4 +22,7 @@ export { buildAgentContext } from './context.js';
 export { createFetcher } from './fetcher.js';
 export type { Fetcher, FetcherError } from './fetcher.js';
 export { sendAgentEvent, sendSSEEvent, writeSSEHeaders } from './sse.js';
-export { logger } from './logger.js';
+export { logger, defaultLogger } from './logger.js';
+export type { Logger } from './logger.js';
+export { installGracefulShutdown } from './shutdown.js';
+export type { GracefulShutdownOptions } from './shutdown.js';

@@ -1,8 +1,18 @@
 {
   "name": "@sharelyai/server",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "description": "Express runtime for Sharely-compatible agent servers. HTTP, auth, persistence, SSE encoding.",
-  "license": "MIT",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sharelyai/sharely-server-sdk.git",
+    "directory": "packages/server"
+  },
+  "homepage": "https://github.com/sharelyai/sharely-server-sdk/tree/main/packages/server#readme",
+  "keywords": ["sharely", "agent", "server", "express", "sse", "ai"],
+  "engines": {
+    "node": ">=20"
+  },
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",

@@ -15,6 +15,7 @@ const KNOWN_TYPES = new Set<AgentEvent['type']>([
   'content_delta',
   'content_end',
   'sources',
+  'metadata_update',
   'message_end',
   'error',
 ]);

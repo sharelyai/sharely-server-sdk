@@ -17,7 +17,7 @@ import {
   sendSSEEvent,
   writeSSEHeaders,
 } from './sse.js';
-import { logger } from './logger.js';
+import { defaultLogger, type Logger } from './logger.js';
 
 export const newId = (): string =>
   globalThis.crypto?.randomUUID?.() ??
@@ -118,6 +118,7 @@ export interface RunOptions {
   message: string;
   res: Response;
   api: SharelyAPIClient;
+  logger?: Logger;
 }
 
 const HISTORY_LIMIT = 50;
@@ -128,6 +129,7 @@ export const runHandler = async ({
   message,
   res,
   api,
+  logger = defaultLogger,
 }: RunOptions): Promise<void> => {
   const abort = new AbortController();
   res.on('close', () => abort.abort());
@@ -170,7 +172,7 @@ export const runHandler = async ({
     if (!res.writableEnded) {
       sendSSEEvent(res, 'error', {
         ...envelope,
-        error: err instanceof Error ? err.message : 'Handler error',
+        error: 'An internal error occurred',
       });
     }
   }

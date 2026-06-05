@@ -1,8 +1,18 @@
 {
   "name": "@sharelyai/api",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "description": "Typed client to sharelyai-be (Sharely Platform Services), generated from OpenAPI.",
-  "license": "MIT",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sharelyai/sharely-server-sdk.git",
+    "directory": "packages/api"
+  },
+  "homepage": "https://github.com/sharelyai/sharely-server-sdk/tree/main/packages/api#readme",
+  "keywords": ["sharely", "agent", "api-client", "backplane", "sse", "ai"],
+  "engines": {
+    "node": ">=20"
+  },
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",

@@ -1,8 +1,18 @@
 {
   "name": "@sharelyai/adapter-vercel-ai",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "Translates Vercel AI SDK streams into Sharely AgentEvents.",
-  "license": "MIT",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sharelyai/sharely-server-sdk.git",
+    "directory": "packages/adapter-vercel-ai"
+  },
+  "homepage": "https://github.com/sharelyai/sharely-server-sdk/tree/main/packages/adapter-vercel-ai#readme",
+  "keywords": ["sharely", "agent", "adapter", "vercel-ai", "ai-sdk", "sse", "ai"],
+  "engines": {
+    "node": ">=20"
+  },
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",

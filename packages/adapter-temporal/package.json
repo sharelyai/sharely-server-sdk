@@ -1,8 +1,18 @@
 {
   "name": "@sharelyai/adapter-temporal",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "Translates Temporal workflow signals into Sharely AgentEvents.",
-  "license": "MIT",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sharelyai/sharely-server-sdk.git",
+    "directory": "packages/adapter-temporal"
+  },
+  "homepage": "https://github.com/sharelyai/sharely-server-sdk/tree/main/packages/adapter-temporal#readme",
+  "keywords": ["sharely", "agent", "adapter", "temporal", "sse", "ai"],
+  "engines": {
+    "node": ">=20"
+  },
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",

@@ -1,6 +1,6 @@
 import 'dotenv/config';
 import { Connection, Client } from '@temporalio/client';
-import { createSharelyServer } from '@sharelyai/server';
+import { createSharelyServer, installGracefulShutdown } from '@sharelyai/server';
 import { createTemporalHandler, wrapTemporalClient } from './handler.js';
 
 const required = (name: string): string => {
@@ -32,11 +32,12 @@ const main = async (): Promise<void> => {
   });
 
   const port = Number(process.env['PORT'] ?? 8084);
-  app.listen(port, () =>
+  const server = app.listen(port, () =>
     console.log(
       `[live-demo-temporal-ai-sdk] sharely agent server listening on :${port}`,
     ),
   );
+  installGracefulShutdown(server, { onShutdown: () => connection.close() });
 };
 
 main().catch(err => {

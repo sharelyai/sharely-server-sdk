@@ -1,8 +1,18 @@
 {
   "name": "@sharelyai/tools",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "Sharely tool definitions.",
-  "license": "MIT",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sharelyai/sharely-server-sdk.git",
+    "directory": "packages/tools"
+  },
+  "homepage": "https://github.com/sharelyai/sharely-server-sdk/tree/main/packages/tools#readme",
+  "keywords": ["sharely", "agent", "tools", "ai"],
+  "engines": {
+    "node": ">=20"
+  },
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",

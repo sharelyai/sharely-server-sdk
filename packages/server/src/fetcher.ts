@@ -1,4 +1,4 @@
-import { logger } from "./logger.js";
+import { defaultLogger, type Logger } from "./logger.js";
 
 export interface FetcherOptions {
   url: string;
@@ -42,12 +42,13 @@ const backoffMs = (attempt: number) => Math.min(2 ** attempt * 250, 4000);
 const fail = (message: string, status: number, data?: unknown): FetcherError =>
   ({ error: "RemoteRequestFailed", message, status, data, timestamp: new Date().toISOString() });
 
-export interface FetcherConfig { baseUrl: string; timeoutMs?: number; retries?: number; }
+export interface FetcherConfig { baseUrl: string; timeoutMs?: number; retries?: number; logger?: Logger; }
 
 export const createFetcher = (config: FetcherConfig) => {
   const baseUrl = config.baseUrl.replace(/\/$/, "");
   const timeoutMs = config.timeoutMs ?? 30_000;
   const retries = config.retries ?? 3;
+  const logger = config.logger ?? defaultLogger;
 
   return async <T = unknown>(opts: FetcherOptions): Promise<FetcherResponse<T>> => {
     const method = opts.method ?? "GET";

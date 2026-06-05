@@ -18,7 +18,7 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
-    "@sharelyai/tsconfig": "*",
+    "@sharelyai/tsconfig": "^0.0.1",
     "@types/node": "^20.17.10",
     "tsx": "^4.19.2",
     "typescript": "^5.6.3"

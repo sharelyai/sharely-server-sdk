@@ -1,8 +1,18 @@
 {
   "name": "@sharelyai/conformance",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "Shared conformance harness — validates AgentEvent streams against the wire-protocol contract.",
-  "license": "MIT",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sharelyai/sharely-server-sdk.git",
+    "directory": "packages/conformance"
+  },
+  "homepage": "https://github.com/sharelyai/sharely-server-sdk/tree/main/packages/conformance#readme",
+  "keywords": ["sharely", "agent", "conformance", "protocol", "testing", "ai"],
+  "engines": {
+    "node": ">=20"
+  },
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",

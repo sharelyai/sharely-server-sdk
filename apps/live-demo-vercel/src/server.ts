@@ -1,5 +1,5 @@
 import 'dotenv/config';
-import { createSharelyServer } from '@sharelyai/server';
+import { createSharelyServer, installGracefulShutdown } from '@sharelyai/server';
 import { handler } from './handler.js';
 
 const required = (name: string): string => {
@@ -16,6 +16,7 @@ const app = createSharelyServer({
 });
 
 const port = Number(process.env['PORT'] ?? 8081);
-app.listen(port, () =>
+const server = app.listen(port, () =>
   console.log(`[live-demo-vercel] sharely agent server listening on :${port}`),
 );
+installGracefulShutdown(server);

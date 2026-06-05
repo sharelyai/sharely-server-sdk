@@ -14,7 +14,7 @@ npm i @sharelyai/api @sharelyai/protocol
 import { createSharelyAPIClient } from '@sharelyai/api';
 
 const api = createSharelyAPIClient({
-  baseUrl: process.env.SHARELY_API_URL!, // e.g. https://sharely-develop.fly.dev
+  baseUrl: process.env.SHARELY_API_URL!, // e.g. https://api.sharely.ai
   workspaceId: process.env.WORKSPACE_ID!,
   authorization: req.headers.authorization!, // forwarded from the inbound request
 });

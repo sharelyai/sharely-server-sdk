@@ -3,7 +3,7 @@ import { ChatOpenAI } from '@langchain/openai';
 import { tool } from '@langchain/core/tools';
 import { createReactAgent } from '@langchain/langgraph/prebuilt';
 import { z } from 'zod';
-import { createSharelyServer } from '@sharelyai/server';
+import { createSharelyServer, installGracefulShutdown } from '@sharelyai/server';
 import { createLangGraphHandler } from './handler.js';
 
 const required = (name: string): string => {
@@ -65,6 +65,7 @@ const app = createSharelyServer({
 });
 
 const port = Number(process.env['PORT'] ?? 8083);
-app.listen(port, () =>
+const server = app.listen(port, () =>
   console.log(`[live-demo-langgraph] sharely agent server listening on :${port}`),
 );
+installGracefulShutdown(server);

@@ -4,7 +4,7 @@
 //
 // Then `tsx server.ts` (or compile first) with these env vars set:
 //   ANTHROPIC_API_KEY        — Anthropic API key
-//   SHARELY_API_URL          — sharelyai-be base URL (e.g. https://sharely-develop.fly.dev)
+//   SHARELY_API_URL          — Sharely platform base URL (e.g. https://api.sharely.ai)
 //   SHARELY_WORKSPACE_ID     — your workspace id
 //   SHARELY_WORKSPACE_API_KEY — workspace access-key token (validates incoming user tokens)
 
