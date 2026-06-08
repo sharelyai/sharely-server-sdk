@@ -1,6 +1,15 @@
 import cors from 'cors';
 import rateLimit from 'express-rate-limit';
-import { createSharelyAPIClient, SharelyAPIError } from '@sharelyai/api';
+import {
+  createSharelyAPIClient,
+  defaultTransport,
+  SharelyAPIError,
+} from '@sharelyai/api';
+import type {
+  Transport,
+  TransportRequest,
+  TransportResponse,
+} from '@sharelyai/api';
 
 import { extractAuthHeader, isInvalidBearer } from './auth.js';
 import { buildAgentContext } from './context.js';
@@ -193,6 +202,43 @@ export const createSharelyServer = (
     return (await exchangePlatformAuth(cacheKey, role)).auth;
   };
 
+  // Defense-in-depth for the cached access JWT. The proactive `exp` refresh in
+  // `resolvePlatformAuth` handles tokens that expire mid-life, but it can't
+  // catch a token rejected *earlier* than its decoded `exp` implies — clock
+  // skew, a missing/undecodable `exp` (which falls back to a bounded TTL), or
+  // backend key rotation/revocation. So if a downstream Backplane call returns
+  // 401/403, we invalidate this role's cached entry, force a single
+  // re-exchange, and retry the call once. Together these let a long-running
+  // server self-heal without a restart.
+  const refreshingTransport = (role: RoleClaim | undefined): Transport => {
+    const inner = defaultTransport(opts.apiUrl);
+    const cacheKey = role?.roleId ?? role?.customerRoleId ?? NO_ROLE;
+    return async <T = unknown>(
+      req: TransportRequest,
+    ): Promise<TransportResponse<T>> => {
+      try {
+        return await inner<T>(req);
+      } catch (err) {
+        if (
+          err instanceof SharelyAPIError &&
+          (err.status === 401 || err.status === 403)
+        ) {
+          logger.warn(
+            'Backplane call rejected the cached access JWT — re-exchanging and retrying once',
+            { role: cacheKey, status: err.status },
+          );
+          platformAuthByRole.delete(cacheKey);
+          const fresh = await resolvePlatformAuth(role);
+          return inner<T>({
+            ...req,
+            headers: { ...req.headers, authorization: fresh },
+          });
+        }
+        throw err;
+      }
+    };
+  };
+
   const validateIncoming = opts.validateIncomingToken ?? true;
   const enableProxy = opts.enableProxy ?? true;
   const app = express();
@@ -359,11 +405,19 @@ export const createSharelyServer = (
       // the token + agentThread.roleId) operates as the real user. The
       // resolved role UUID is also surfaced via `roleId` for tool-dispatch
       // bodies.
+      const clientRole: RoleClaim | undefined =
+        roleId || customerRoleId
+          ? {
+              ...(roleId && { roleId }),
+              ...(customerRoleId && { customerRoleId }),
+            }
+          : undefined;
       const api = createSharelyAPIClient({
         baseUrl: opts.apiUrl,
         workspaceId: opts.workspaceId,
         authorization: platformAuth,
         ...(roleId !== undefined && { roleId }),
+        transport: refreshingTransport(clientRole),
       });
 
       // `X-Sharely-Message-Id` is set by sharelyai-be's proxyToAgentServer:

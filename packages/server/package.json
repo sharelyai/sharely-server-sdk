@@ -1,6 +1,6 @@
 {
   "name": "@sharelyai/server",
-  "version": "0.0.6",
+  "version": "0.0.7",
   "description": "Express runtime for Sharely-compatible agent servers. HTTP, auth, persistence, SSE encoding.",
   "license": "Apache-2.0",
   "repository": {
@@ -29,6 +29,8 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "clean": "rm -rf dist .turbo"
   },
   "dependencies": {

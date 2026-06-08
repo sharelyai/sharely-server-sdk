@@ -63,5 +63,14 @@ Bump all published packages together to the same line so versions stay legible.
 
 ## Tests
 
-A test runner is not yet wired up. Until it is, verify changes against the
-example smoke scripts in `examples/<name>/smoke.mjs`.
+The SDK uses [Vitest](https://vitest.dev). Run the whole suite from the repo
+root:
+
+```bash
+npx turbo run test     # or: npm test
+```
+
+Per-package tests live in `packages/<name>/test/`; run one package's tests in
+watch mode with `npm run test:watch -w @sharelyai/<name>`. For an end-to-end
+sanity check you can still run the example smoke scripts in
+`examples/<name>/smoke.mjs`.

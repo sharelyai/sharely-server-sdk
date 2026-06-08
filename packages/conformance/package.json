@@ -1,6 +1,6 @@
 {
   "name": "@sharelyai/conformance",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "Shared conformance harness — validates AgentEvent streams against the wire-protocol contract.",
   "license": "Apache-2.0",
   "repository": {
@@ -26,6 +26,8 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "clean": "rm -rf dist .turbo"
   },
   "dependencies": {
