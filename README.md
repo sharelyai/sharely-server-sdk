@@ -1,5 +1,35 @@
 # Sharely Server SDK
 
+The Sharely Server SDK is how you bring your own agent to the Sharely platform.
+You own and host the agent logic; the platform routes a user's chat turn to your
+server and streams the response back into the portal where the user is working.
+
+It exists because Sharely splits the platform into parts you run and parts Sharely
+manages. Knowledge, governance (RBAC), and the control plane that routes requests
+and validates identity are managed by Sharely. The agent itself — its model,
+framework, tools, and infrastructure — is yours. The SDK is the contract between
+the two: it implements the HTTP, auth, token validation, persistence, and SSE wire
+format, so your code only has to produce the answer.
+
+Within a request, the SDK connects your agent to three platform capabilities:
+
+- **Sharely Knowledge** *(managed)* — retrieval over governed, role-scoped content
+  (ingestion, taxonomies, RAG, RBAC). Your agent queries it through a typed,
+  request-scoped platform client; results are already filtered to the calling
+  user's role.
+- **WebControl** *(open)* — the embeddable delivery surface. It renders the events
+  your agent streams — thinking steps, tool calls, citations — inside an existing
+  web portal, so there is no client UI to build.
+- **Control plane** *(managed)* — routes each turn to your server, validates the
+  user's token, and persists the conversation, so your handler never deals with
+  auth, the wire format, or storage.
+
+Different roles often need different agent behavior, not just different documents —
+a finance agent and a volunteer agent may draw on the same knowledge but differ in
+tools and guardrails. Running that as code you own and host is what this SDK is for.
+
+---
+
 Build a **Sharely-compatible agent server**. You bring the agent logic — an
 async generator that yields typed events — and the SDK owns the rest: HTTP,
 auth, token validation, message persistence, and Server-Sent Events (SSE)
