@@ -21,7 +21,7 @@
     "dotenv": "^16.4.5"
   },
   "devDependencies": {
-    "@sharelyai/tsconfig": "^0.0.1",
+    "@sharelyai/tsconfig": "*",
     "@types/node": "^20.17.10",
     "tsx": "^4.19.2",
     "typescript": "^5.6.3"

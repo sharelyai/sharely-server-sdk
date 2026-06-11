@@ -39,7 +39,7 @@
     "@langchain/core": "^1.1.48",
     "@langchain/langgraph": "^1.3.2",
     "@openai/agents": "^0.11.5",
-    "@sharelyai/tsconfig": "^0.0.1",
+    "@sharelyai/tsconfig": "*",
     "@temporalio/client": "^1.16.2",
     "@types/supertest": "^6.0.3",
     "dotenv-cli": "^11.0.0",
