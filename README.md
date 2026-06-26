@@ -194,6 +194,65 @@ copy the demo's `.env.example` to `.env`, fill in the keys, then run it. Each is
 The Temporal demos run a separate worker process alongside the server — see the
 demo's README for the worker command.
 
+### Quickstart — test with `live-demo-vercel`
+
+The fastest way to see an end-to-end Sharely agent is
+[`live-demo-vercel`](apps/live-demo-vercel/) — a **one-process** server built on
+the Vercel AI SDK adapter, with the platform knowledge tools and a sample
+`get_weather` tool already wired up. Run it in four steps:
+
+```bash
+# 1. from the repo root — install + build everything
+npm install
+npx turbo run build
+
+# 2. configure the demo
+cd apps/live-demo-vercel
+cp .env.example .env     # fill in SHARELY_WORKSPACE_ID, SHARELY_WORKSPACE_API_KEY, OPENAI_API_KEY
+
+# 3. start the server
+npm run dev              # listens on http://localhost:8081
+```
+
+`SHARELY_WORKSPACE_ID` and `SHARELY_WORKSPACE_API_KEY` come from your Sharely
+workspace (**Settings → API Keys**); `OPENAI_API_KEY` is your own OpenAI key.
+
+That's a live agent server. The last step is to point your workspace at it — see
+[Configure your agent in your workspace](#configure-your-agent-in-your-workspace)
+below — then ask *"what's the weather in Berlin?"* to exercise the tool loop.
+
+Want a different stack? The exact same flow works for every demo in
+[`apps/`](apps/) — Temporal, Temporal + AI SDK, LangGraph. Pick one from the
+table above and follow its README; they all connect to your workspace the same
+way.
+
+### Configure your agent in your workspace
+
+Once your agent server is running and reachable over HTTPS, connect your Sharely
+workspace to it. The chat in your **WebControl** will then route every
+conversation to your server.
+
+**1. Open Settings → Agent server.** In your workspace, go to **Settings** (in
+the left sidebar) and open the **Agent server** tab.
+
+![Open the Agent server tab in Settings](images/settings.png)
+
+**2. Add your server URL and save.** Paste your agent server's public URL into
+**Server URL** and click **Save configuration**.
+
+![Enter your agent server URL and save](images/settings-2.png)
+
+**3. Chat with your agent in WebControl.** Open **Agent chat** in your
+WebControl — every message now goes to your server, and its replies, tool calls,
+and steps stream back in live.
+
+![Your agent responding in WebControl's Agent chat](images/webcontrol.png)
+
+> **Reachability.** The URL must be reachable by Sharely over HTTPS. In
+> production use your deployed URL (e.g. `https://my-company.com/agent-server`).
+> For local development, expose your localhost with a tunnel — e.g.
+> `ngrok http 8081` — and paste the resulting `https://…` URL.
+
 ## Development
 
 ```bash

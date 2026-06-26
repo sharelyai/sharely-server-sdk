@@ -33,9 +33,36 @@ cp .env.example .env        # fill SHARELY_* and OPENAI_API_KEY
 npm run dev                 # listens on :8083
 ```
 
-Then point a Sharely thread's `agentServerId` at `http://localhost:8083` and
-chat. Try "what's the weather in Berlin?" to exercise the tool loop. For
+The server now listens on `http://localhost:8083`. The last step is to connect
+your workspace to it — see [Configure it in your workspace](#configure-it-in-your-workspace)
+below — then ask *"what's the weather in Berlin?"* to exercise the tool loop. For
 production: `npm run build` then `npm start`.
+
+## Configure it in your workspace
+
+With the server running and reachable over HTTPS, point your Sharely workspace at
+it. The chat in your **WebControl** then routes every conversation to this server.
+
+**1. Open Settings → Agent server.** In your workspace, go to **Settings** in the
+left sidebar and open the **Agent server** tab.
+
+![Open the Agent server tab in Settings](../../images/settings.png)
+
+**2. Add your server URL and save.** Paste your agent server's public URL into
+**Server URL** and click **Save configuration**.
+
+![Enter your agent server URL and save](../../images/settings-2.png)
+
+**3. Chat with your agent in WebControl.** Open **Agent chat** in your WebControl —
+every message now goes to your server, and its replies, tool calls, and steps
+stream back in live.
+
+![Your agent responding in WebControl's Agent chat](../../images/webcontrol.png)
+
+> **Reachability.** The URL must be reachable by Sharely over HTTPS. In production
+> use your deployed URL (e.g. `https://my-company.com/agent-server`). For local
+> development, expose your localhost with a tunnel — e.g. `ngrok http 8083` — and
+> paste the resulting `https://…` URL.
 
 ## What the handler maps
 
